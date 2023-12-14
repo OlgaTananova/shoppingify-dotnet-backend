@@ -36,7 +36,7 @@ namespace shoppingify_backend.Controllers
                 var userExist = await _userManager.FindByEmailAsync(registerModel.Email);
                 if (userExist != null)
                 {
-                    return BadRequest($"User {registerModel.Email} already exist.");
+                    return BadRequest($"User {registerModel.Email} already exists.");
                 }
 
                 ApplicationUser newUser = new ApplicationUser()
@@ -48,7 +48,11 @@ namespace shoppingify_backend.Controllers
                 var result = await _userManager.CreateAsync(newUser, registerModel.Password);
                 if (!result.Succeeded)
                 {
-                    return BadRequest($"User cannot be created.");
+                    foreach (var error in result.Errors)
+                    {
+                        ModelState.AddModelError("errors", error.Description); // Add errors to the ModelState
+                    }
+                    return BadRequest(ModelState);
                 }
 
                 return Ok("User was created.");
@@ -73,22 +77,24 @@ namespace shoppingify_backend.Controllers
                 var exitstingUser = await _userManager.FindByEmailAsync(loginModel.Email);
                 if (exitstingUser != null)
                 {
-                    var result = await _signInManager.PasswordSignInAsync(exitstingUser, loginModel.Password, isPersistent: false, lockoutOnFailure: false);
+                    var result = await _signInManager.PasswordSignInAsync(exitstingUser, loginModel.Password, isPersistent: true, false);
                     if (result.Succeeded)
                     {
-                        var token = await TokenGenerator.GenerateJwtToken(exitstingUser, _configuration);
-                        var cookieOptions = new CookieOptions
-                        {
-                            HttpOnly = true,
-                            Expires = DateTime.UtcNow.AddDays(8), // Set the same expiry as your token
-                          // Secure = true, // Uncomment this if you're using HTTPS
-                            SameSite = SameSiteMode.None // Helps mitigate CSRF attacks
-                        };
-                        Response.Cookies.Append("Token", token, cookieOptions);
+                        // Token generation
+                        //var token = await TokenGenerator.GenerateJwtToken(exitstingUser, _configuration);
+                        //var cookieOptions = new CookieOptions
+                        //{
+                        //    HttpOnly = true,
+                        //    Expires = DateTime.UtcNow.AddDays(8), // Set the same expiry as your token
+                        //  // Secure = true, // Uncomment this if you're using HTTPS
+                        //    SameSite = SameSiteMode.None // Helps mitigate CSRF attacks
+                        //};
+                        //// Attach cookies to the response
+                        //Response.Cookies.Append("Token", token, cookieOptions);
                         return Ok("Token was sent in cookies");
                     }
 
-                }
+               }
                 return Unauthorized("Invalid email or password.");
             }
             catch (Exception ex)
@@ -102,10 +108,11 @@ namespace shoppingify_backend.Controllers
         [Authorize]
         public async Task<IActionResult> Logout()
         {
-            foreach (var cookie in Request.Cookies.Keys)
-            {
-                Response.Cookies.Delete(cookie);
-            }
+            //foreach (var cookie in Request.Cookies.Keys)
+            //{
+            //    Response.Cookies.Delete(cookie);
+            //}
+            await _signInManager.SignOutAsync();
 
             return Ok("You were successfully logged out.");
         }

@@ -25,37 +25,49 @@ builder.Services.AddControllers();
 
 
 // Add Authentication + HttpOnly Cookie
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration["JWT:Secret"])),
-            ValidateIssuer = true,
-            ValidIssuer = builder.Configuration["JWT:Issuer"],
-            ValidateAudience = true,
-            ValidAudience = builder.Configuration["JWT:Audience"],
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
-        };
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme);
+// In case using a custom JWT Token
+//    .AddJwtBearer(options =>
+//    {
+//        options.TokenValidationParameters = new TokenValidationParameters
+//        {
+//            ValidateIssuerSigningKey = true,
+//            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration["JWT:Secret"])),
+//            ValidateIssuer = true,
+//            ValidIssuer = builder.Configuration["JWT:Issuer"],
+//            ValidateAudience = true,
+//            ValidAudience = builder.Configuration["JWT:Audience"],
+//            ValidateLifetime = true,
+//            ClockSkew = TimeSpan.Zero
+//        };
+//        // Setup extraction of a token from cookies
+//        options.Events = new JwtBearerEvents
+//        {
+//            OnMessageReceived = context =>
+//            {
+//                var tokenName = builder.Configuration["JWT:TokenName"]?? "Token";
+//                if (context.Request.Cookies.ContainsKey(tokenName))
+//                {
+//                    context.Token = context.Request.Cookies[tokenName];
+//                }
+//                return Task.CompletedTask;
+//            }
+//        };
+//    }
+//);
+// Built-in token sent via httponly cookie
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.HttpOnly = true;  // Make the cookie HTTP-only
+    //options.Cookie.SecurePolicy = CookieSecurePolicy.Always;  // Enforce HTTPS
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.ExpireTimeSpan = TimeSpan.FromDays(30);
+    options.LoginPath = "/Auth/login";
+    options.LogoutPath = "/Auth/logout";
+    options.Cookie.Name = "Token";
+    options.SlidingExpiration = true;
+});
 
-        options.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = context =>
-            {
-                if (context.Request.Cookies.ContainsKey("Token"))
-                {
-                    context.Token = context.Request.Cookies["Token"];
-                }
-                return Task.CompletedTask;
-            }
-        };
-    }
-);
-
-
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
