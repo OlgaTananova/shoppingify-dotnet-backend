@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
+using shoppingify_backend.Helpers;
 using shoppingify_backend.Models;
 using System.Text;
 
@@ -14,8 +16,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AuthContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
-// Add Identity Provider 
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
+// Add Identity Provider  + requirements for user's passwords
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+{
+    options.Password.RequiredLength = 8;
+    options.Password.RequireDigit = true;
+    options.Password.RequireNonAlphanumeric = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+})
     .AddEntityFrameworkStores<AuthContext>()
     .AddDefaultTokenProviders();
 
@@ -26,6 +35,7 @@ builder.Services.AddControllers();
 
 // Add Authentication + HttpOnly Cookie
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme);
+
 // In case using a custom JWT Token
 //    .AddJwtBearer(options =>
 //    {
@@ -55,6 +65,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme);
 //        };
 //    }
 //);
+
+
 // Built-in token sent via httponly cookie
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -71,21 +83,33 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .WriteTo.Console()
+    .WriteTo.File("logs/myapp.txt", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
+    //app.UseExceptionHandler("/Error");
     app.UseSwagger();
     app.UseSwaggerUI();
-} else
-{
-    app.UseExceptionHandler("/Error"); // Make sure to create this endpoint
-    app.UseHsts();
 }
 
 app.UseHttpsRedirection();
+
+//Logging middleware
+app.UseMiddleware<RequestLoggingMiddleware>();
+
+//Error handling middleware
+app.UseMiddleware<ErrorHandlingMiddleware>();
 
 app.UseAuthentication();
 
