@@ -16,6 +16,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AuthContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
+// Add ApplicationContext 
+builder.Services.AddDbContext<ApplicationContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+
 // Add Identity Provider  + requirements for user's passwords
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
@@ -28,6 +32,16 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     .AddEntityFrameworkStores<AuthContext>()
     .AddDefaultTokenProviders();
 
+// Add Cors
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocal", builder => {
+        builder.WithOrigins("http://localhost:3000")
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
+    });
+});
 
 // Add Controllers
 builder.Services.AddControllers();
@@ -73,6 +87,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.HttpOnly = true;  // Make the cookie HTTP-only
     //options.Cookie.SecurePolicy = CookieSecurePolicy.Always;  // Enforce HTTPS
     options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.ExpireTimeSpan = TimeSpan.FromDays(30);
     options.LoginPath = "/Auth/login";
     options.LogoutPath = "/Auth/logout";
@@ -85,7 +100,7 @@ builder.Services.AddSwaggerGen();
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Debug()
+    .MinimumLevel.Error()
     .WriteTo.Console()
     .WriteTo.File("logs/myapp.txt", rollingInterval: RollingInterval.Day)
     .CreateLogger();
@@ -95,21 +110,24 @@ builder.Host.UseSerilog();
 
 var app = builder.Build();
 
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    //app.UseExceptionHandler("/Error");
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
-
-//Logging middleware
-app.UseMiddleware<RequestLoggingMiddleware>();
-
 //Error handling middleware
 app.UseMiddleware<ErrorHandlingMiddleware>();
+
+//Logging middleware
+app.UseMiddleware<ErrorLoggingMiddleware>();
+
+// Cors
+app.UseCors("AllowLocal");
 
 app.UseAuthentication();
 

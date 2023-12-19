@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -21,14 +22,12 @@ namespace shoppingify_backend.Controllers
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly AuthContext _context;
         private readonly IConfiguration _configuration;
-        private readonly ILogger<AuthController> _logger;
-        public AuthController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, AuthContext context, IConfiguration configuration, ILogger<AuthController> logger)
+        public AuthController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, AuthContext context, IConfiguration configuration)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _context = context;
             _configuration = configuration;
-            _logger = logger;
         }
 
         [HttpPost("register")]
@@ -66,7 +65,6 @@ namespace shoppingify_backend.Controllers
             return Ok("User was created.");
 
         }
-
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel loginModel)
