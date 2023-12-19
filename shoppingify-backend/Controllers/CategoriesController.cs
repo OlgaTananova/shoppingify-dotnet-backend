@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using shoppingify_backend.Helpers.CustomExceptions;
 using shoppingify_backend.Models;
+using System.Data;
 using System.Security.Claims;
 
 namespace shoppingify_backend.Controllers
@@ -22,15 +23,19 @@ namespace shoppingify_backend.Controllers
         [Authorize]
         public async Task<IActionResult> GetCategories()
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var result = await _context.Categories.ToArrayAsync();
 
-            return Ok($"{userId}.");
+            if(result.Length > 0)
+            {
+                return Ok(result);
+            }
+            throw new NotFoundException("There are no categories.");
 
         }
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> CreateCategory(CategoryModel category)
+        public async Task<IActionResult> CreateCategory([FromBody]CategoryModel category)
         {
             if (!ModelState.IsValid)
             {
@@ -55,7 +60,7 @@ namespace shoppingify_backend.Controllers
 
             if (result > 0)
             {
-                return CreatedAtAction("Category Created", newCategory);
+                return Ok(newCategory);
             }
 
             throw new BadRequestException("Failed to create the category.");

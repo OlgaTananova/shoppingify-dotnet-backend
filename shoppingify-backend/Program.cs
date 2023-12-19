@@ -20,6 +20,10 @@ builder.Services.AddDbContext<AuthContext>(options =>
 builder.Services.AddDbContext<ApplicationContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
+// Add Service to extract the current user from the http context
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<UserResolverService>();
+
 // Add Identity Provider  + requirements for user's passwords
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {

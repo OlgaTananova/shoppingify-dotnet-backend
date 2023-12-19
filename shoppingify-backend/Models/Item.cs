@@ -7,9 +7,9 @@ namespace shoppingify_backend.Models
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string ItemName { get; set; }
-        public int CategoryId { get; set; }
+        public Guid CategoryId { get; set; }
         public string OwnerId { get; set; }
         public string Image { get; set; }
 
