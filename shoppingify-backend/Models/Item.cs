@@ -11,7 +11,8 @@ namespace shoppingify_backend.Models
         public string ItemName { get; set; }
         public Guid CategoryId { get; set; }
         public string OwnerId { get; set; }
-        public string Image { get; set; }
+        public string Image { get; set; } = "";
+        public string Note { get; set; } = "";
 
     }
 }

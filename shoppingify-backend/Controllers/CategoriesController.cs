@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using shoppingify_backend.Helpers;
 using shoppingify_backend.Helpers.CustomExceptions;
 using shoppingify_backend.Models;
 using System.Data;
@@ -10,57 +11,61 @@ using System.Security.Claims;
 namespace shoppingify_backend.Controllers
 {
     [Route("[controller]")]
-    [ApiController]
+    [ApiController] // Allows automatically validate requests' body parameters
     public class CategoriesController : ControllerBase
     {
         private readonly ApplicationContext _context;
-        public CategoriesController(ApplicationContext context)
+        private readonly string _userId;
+        public CategoriesController(ApplicationContext context, UserResolverService userResolverService)
         {
             _context = context;
+            _userId = userResolverService.GetCurrentUserId();
+
         }
 
         [HttpGet]
         [Authorize]
         public async Task<IActionResult> GetCategories()
         {
-            var result = await _context.Categories.ToArrayAsync();
-
-            if(result.Length > 0)
+            var result = await _context.Categories
+                                            .Include(c => c.Items)
+                                            .Select(cat => new
+                                            {
+                                                _id = cat.Id,
+                                                category = cat.CategoryName,
+                                                owner = cat.OwnerId,
+                                                items = cat.Items.Select(i => i.Id).ToList()
+                                            })
+                                            .ToListAsync();
+            if (result.Any())
             {
-                return Ok(result);
+               return Ok(result);
             }
-            throw new NotFoundException("There are no categories.");
-
+            return Ok(new List<object>());
+            
         }
 
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> CreateCategory([FromBody]CategoryModel category)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (userId == null)
-            {
-                throw new ForbiddenException("Unauthorized action.");
-            }
             var newCategory = new Category
             {
-                CategoryName = category.CategoryName,
-                OwnerId = userId,
+                CategoryName = category.Category,
+                OwnerId = _userId
             };
-
 
             _context.Categories.Add(newCategory);
             var result = await _context.SaveChangesAsync();
 
             if (result > 0)
             {
-                return Ok(newCategory);
+                return Ok(new
+                {
+                    _id = newCategory.Id,
+                    category = newCategory.CategoryName,
+                    owner = newCategory.OwnerId
+                });
             }
 
             throw new BadRequestException("Failed to create the category.");

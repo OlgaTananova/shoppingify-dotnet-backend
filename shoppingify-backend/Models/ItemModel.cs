@@ -7,11 +7,13 @@ namespace shoppingify_backend.Models
         [Required]
         [MinLength(2)]
         [MaxLength(30)]
-        public string ItemName { get; set; }
+        public string Name { get; set; }
 
         [Required]
         public string CategoryId { get; set; }
-        public string Image { get; set; }
+        public string Image { get; set; } = "";
+
+        public string Note { get; set; } = "";
 
     }
 }

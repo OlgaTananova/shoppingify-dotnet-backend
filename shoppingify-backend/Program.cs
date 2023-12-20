@@ -124,6 +124,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
 //Error handling middleware
 app.UseMiddleware<ErrorHandlingMiddleware>();
 

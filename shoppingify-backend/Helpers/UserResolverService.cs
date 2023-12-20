@@ -2,9 +2,13 @@
 
 namespace shoppingify_backend.Helpers
 {
+    public interface IUserResolverService
+    {
+        string GetCurrentUserId();
+    }
 
     // Custom class to extract the current user from Http Request
-    public class UserResolverService
+    public class UserResolverService: IUserResolverService
     {
         private readonly IHttpContextAccessor _contextAccessor;
 

@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using shoppingify_backend.Data;
+using shoppingify_backend.Helpers;
 using shoppingify_backend.Helpers.CustomExceptions;
 using shoppingify_backend.Models;
 using System.Data;
@@ -22,26 +24,23 @@ namespace shoppingify_backend.Controllers
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly AuthContext _context;
         private readonly IConfiguration _configuration;
-        public AuthController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, AuthContext context, IConfiguration configuration)
+        private readonly string _userId;
+        public AuthController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, AuthContext context, IConfiguration configuration, UserResolverService userResolverService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _context = context;
             _configuration = configuration;
+            _userId = userResolverService.GetCurrentUserId();
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> RegisterUser([FromBody] RegisterModel registerModel)
         {
-            if (!ModelState.IsValid)
-
-            {
-                return BadRequest(ModelState);
-            }
             var userexist = await _userManager.FindByEmailAsync(registerModel.Email);
             if (userexist != null)
             {
-                throw new ConflictException("the user with such email already exists.");
+                throw new ConflictException("The user with such email already exists.");
             }
 
             ApplicationUser newuser = new ApplicationUser()
@@ -62,18 +61,17 @@ namespace shoppingify_backend.Controllers
                 throw new BadRequestException(errors.ToString());
             }
 
-            return Ok("User was created.");
+            return Ok(new
+            {
+                name = newuser.UserName,
+                email = newuser.Email
+            });
 
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel loginModel)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
             var exitstingUser = await _userManager.FindByEmailAsync(loginModel.Email);
             if (exitstingUser != null)
             {
@@ -91,13 +89,34 @@ namespace shoppingify_backend.Controllers
                     //};
                     //// Attach cookies to the response
                     //Response.Cookies.Append("Token", token, cookieOptions);
-                    return Ok("Token was sent in cookies");
+                    
+                    return Ok(new { message = "Token was sent in cookies." });
                 }
 
             }
             throw new ForbiddenException("Incorrect password or email.");
-
         }
+
+        [HttpGet("users/me")]
+        [Authorize]
+
+        public async Task<IActionResult> GetCurrentUser()
+        {
+
+            var user = await _userManager.FindByIdAsync(_userId);
+            if (user != null)
+            {
+                return Ok(new
+                {
+                    name = user.UserName,
+                    email = user.Email
+                });
+            }
+
+            throw new NotFoundException("The user was not found.");
+           
+        }
+
         [HttpPost("logout")]
         [Authorize]
         public async Task<IActionResult> Logout()
@@ -106,9 +125,10 @@ namespace shoppingify_backend.Controllers
             //{
             //    Response.Cookies.Delete(cookie);
             //}
+
             await _signInManager.SignOutAsync();
 
-            return Ok("You were successfully logged out.");
+            return Ok(new { message = "You were successfully logged out."});
         }
 
     }

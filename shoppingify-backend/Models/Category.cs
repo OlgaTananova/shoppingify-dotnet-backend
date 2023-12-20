@@ -9,8 +9,13 @@ namespace shoppingify_backend.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public Guid Id { get; set; }
         public string CategoryName { get; set; }
-        public List<Item> Items { get; set; } = new List<Item>();
+        public ICollection<Item> Items { get; set; }
         public string OwnerId { get; set; }
+
+        public Category()
+        {
+            Items = new HashSet<Item>();
+        }
 
     }
 }
