@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace shoppingify_backend.Models
 {
@@ -13,6 +14,11 @@ namespace shoppingify_backend.Models
         public string OwnerId { get; set; }
         public string Image { get; set; } = "";
         public string Note { get; set; } = "";
+
+        // Navigation property
+        [ForeignKey("CategoryId")]
+        [JsonIgnore]
+        public Category Category { get; set; }
 
     }
 }

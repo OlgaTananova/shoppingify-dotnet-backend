@@ -29,12 +29,12 @@ namespace shoppingify_backend.Controllers
         {
             var result = await _context.Categories
                                             .Include(c => c.Items)
-                                            .Select(cat => new
+                                            .Select(cat => new CategoryDTO
                                             {
-                                                _id = cat.Id,
-                                                category = cat.CategoryName,
-                                                owner = cat.OwnerId,
-                                                items = cat.Items.Select(i => i.Id).ToList()
+                                                _id = cat.Id.ToString().ToLower(),
+                                                Category = cat.CategoryName,
+                                                Owner = cat.OwnerId.ToString().ToLower(),
+                                                Items = cat.Items.Select(i => i.Id.ToString().ToLower()).ToList()
                                             })
                                             .ToListAsync();
             if (result.Any())
@@ -60,11 +60,12 @@ namespace shoppingify_backend.Controllers
 
             if (result > 0)
             {
-                return Ok(new
+                return Ok(new CategoryDTO
                 {
-                    _id = newCategory.Id,
-                    category = newCategory.CategoryName,
-                    owner = newCategory.OwnerId
+                    _id = newCategory.Id.ToString(),
+                    Category = newCategory.CategoryName,
+                    Owner = newCategory.OwnerId.ToString(),
+                    Items = new List<string>()
                 });
             }
 

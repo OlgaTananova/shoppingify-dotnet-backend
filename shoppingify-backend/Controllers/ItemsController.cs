@@ -30,18 +30,44 @@ namespace shoppingify_backend.Controllers
 
             if (result.Count > 0)
             {
-                var responseResult = result.Select(i => new
+                var responseResult = result.Select(i => new ItemDTO
                 {
-                    _id = i.Id,
-                    categoryId = i.CategoryId,
-                    name = i.ItemName,
-                    owner = i.OwnerId,
-                    note = i.Note,
-                    image = i.Image
+                    _id = i.Id.ToString(),
+                    CategoryId = i.CategoryId.ToString(),
+                    Name = i.ItemName,
+                    Owner = i.OwnerId.ToString(),
+                    Note = i.Note,
+                    Image = i.Image
                 }).ToList();
                 return Ok(responseResult);
             }
             return Ok(new List<object>());
+        }
+
+        [HttpGet("{id}")]
+        [Authorize]
+        public async Task<IActionResult> GetItem(string id)
+        {
+            if (!Guid.TryParse(id, out var guidId))
+            {
+                throw new BadRequestException("Could not parse id.");
+            }
+            var result = await _context.Items.FindAsync(guidId);
+
+            if (result != null)
+            {
+                var responseResult = new ItemDTO
+                {
+                    _id = result.Id.ToString(),
+                    Name = result.ItemName,
+                    CategoryId = result.CategoryId.ToString(),
+                    Owner = result.OwnerId.ToString(),
+                    Note = result.Note,
+                    Image = result.Image
+                };
+                return Ok(responseResult);
+            }
+            throw new NotFoundException($"Item with id {id} was not found.");
         }
 
         [HttpPost]
@@ -88,21 +114,21 @@ namespace shoppingify_backend.Controllers
                 // Retrieve all items belong to the updatedCategory    
                 var responseResult = new
                 {
-                    item = new
+                    item = new ItemDTO
                     {
-                        _id = newItem.Id,
-                        name = newItem.ItemName,
-                        categoryId = newItem.CategoryId,
-                        owner = newItem.OwnerId,
-                        note = newItem.Note,
-                        image = newItem.Image
+                        _id = newItem.Id.ToString(),
+                        Name = newItem.ItemName,
+                        CategoryId = newItem.CategoryId.ToString(),
+                        Owner = newItem.OwnerId.ToString(),
+                        Note = newItem.Note,
+                        Image = newItem.Image
                     },
-                    category = new
+                    category = new CategoryDTO
                     {
-                        _id = updatedCategory.Id,
-                        category = updatedCategory.CategoryName,
-                        owner = updatedCategory.OwnerId,
-                        items = updatedCategory.Items.Select(i => i.Id).ToList()
+                        _id = updatedCategory.Id.ToString(),
+                        Category = updatedCategory.CategoryName,
+                        Owner = updatedCategory.OwnerId.ToString(),
+                        Items = updatedCategory.Items.Select(i => i.Id.ToString()).ToList()
                     }
 
                 };
@@ -115,28 +141,37 @@ namespace shoppingify_backend.Controllers
         [Authorize]
         public async Task<IActionResult> UpdateItem(string id, [FromBody] ItemModel item)
         {
-        // Parse Ids
+            // Parse Ids
             if (!Guid.TryParse(id, out var guidId) || !Guid.TryParse(item.CategoryId, out var guidCategoryId))
             {
                 throw new BadRequestException("Not valid the item's Id or the category's Id.");
             }
-        //Find the updated item
-            var updatedItem = await _context.Items.FindAsync(guidId);
-           
+            //Find the updated item
+            var updatedItem = await _context.Items.Include(i => i.Category).FirstOrDefaultAsync(item => item.Id == guidId);
+
             if (updatedItem == null)
             {
                 throw new NotFoundException($"The item with id {id} was not found.");
             }
-        //Find the current category and a new category
-            var oldCategory = await _context.Categories.Include(c => c.Items).FirstOrDefaultAsync(cat => cat.Id == updatedItem.CategoryId);
+            //Find the current category and a new category
 
-            var newCategory = await _context.Categories.Include(c => c.Items).FirstOrDefaultAsync(cat => cat.Id == guidCategoryId);
+            Category oldCategory = updatedItem.Category;
+            Category newCategory;
 
-            if (oldCategory == null || newCategory == null)
+            if (guidCategoryId != updatedItem.CategoryId)
             {
-                throw new NotFoundException($"The category with id {updatedItem.CategoryId}, {guidCategoryId} was not found.");
+                newCategory = await _context.Categories.Include(c => c.Items).FirstOrDefaultAsync(cat => cat.Id == guidCategoryId);
+
+                if (newCategory == null)
+                {
+                    throw new NotFoundException($"The category with id {updatedItem.CategoryId}, {guidCategoryId} was not found.");
+                }
+            } else
+            {
+                newCategory = oldCategory;
             }
-        //Update item
+
+            //Update item
             updatedItem.ItemName = item.Name;
             updatedItem.CategoryId = guidCategoryId;
             updatedItem.Note = item.Note;
@@ -144,36 +179,80 @@ namespace shoppingify_backend.Controllers
 
             _context.Items.Update(updatedItem);
             var result = await _context.SaveChangesAsync();
-            if(result > 0)
+            if (result > 0)
             {
                 var responseResult = new
                 {
-                    updatedItem = new
+                    updatedItem = new ItemDTO
                     {
-                        _id = updatedItem.Id,
-                        name = updatedItem.ItemName,
-                        categoryid = updatedItem.CategoryId,
-                        note = updatedItem.Note,
-                        image = updatedItem.Image
+                        _id = updatedItem.Id.ToString(),
+                        Name = updatedItem.ItemName,
+                        CategoryId = updatedItem.CategoryId.ToString(),
+                        Note = updatedItem.Note,
+                        Owner = updatedItem.OwnerId.ToString(),
+                        Image = updatedItem.Image
                     },
-                    deleteFromCategory = new
+                    deleteFromCategory = new CategoryDTO
                     {
-                        _id = oldCategory.Id,
-                        category = oldCategory.CategoryName,
-                        owner = oldCategory.OwnerId,
-                        items = oldCategory.Items
+                        _id = oldCategory.Id.ToString().ToLower(),
+                        Category = oldCategory.CategoryName,
+                        Owner = oldCategory.OwnerId.ToString().ToLower(),
+                        Items = oldCategory.Items.Select(i => i.Id.ToString().ToLower()).ToList()
                     },
-                    addToCategory = new
+                    addToCategory = new CategoryDTO
                     {
-                        _id = newCategory.Id,
-                        category = newCategory.CategoryName,
-                        owner = newCategory.OwnerId,
-                        items = newCategory.Items
+                        _id = newCategory.Id.ToString().ToLower(),
+                        Category = newCategory.CategoryName,
+                        Owner = newCategory.OwnerId.ToString().ToLower(),
+                        Items = newCategory.Items.Select(i => i.Id.ToString().ToLower()).ToList()
                     }
                 };
                 return Ok(responseResult);
             }
             throw new BadRequestException("Failed to update the item.");
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize]
+        public async Task<IActionResult> DeleteItem(string id)
+        {
+            if (!Guid.TryParse(id, out var guidId))
+            {
+                throw new BadRequestException("Cannot parse the item's id.");
+            }
+            var deletedItem = await _context.Items.Include(i => i.Category).FirstOrDefaultAsync(item => item.Id == guidId);
+            if (deletedItem == null)
+            {
+                throw new NotFoundException($"Failed to find the item with {id} id.");
+            }
+            var uptadedCategory = deletedItem.Category;
+
+            _context.Items.Remove(deletedItem);
+            var result = await _context.SaveChangesAsync();
+            if (result > 0)
+            {
+                var responseResult = new
+                {
+                    deletedItem = new ItemDTO
+                    {
+                        _id = deletedItem.Id.ToString(),
+                        Name = deletedItem.ItemName,
+                        CategoryId = deletedItem.CategoryId.ToString(),
+                        Owner = deletedItem.OwnerId.ToString(),
+                        Image = deletedItem.Image,
+                        Note = deletedItem.Note
+                    },
+                    updatedCategory = new CategoryDTO
+                    {
+                        _id = uptadedCategory.Id.ToString(),
+                        Owner = uptadedCategory.OwnerId.ToString(),
+                        Category = uptadedCategory.CategoryName,
+                        Items = uptadedCategory.Items.Select(i => i.Id.ToString()).ToList()
+                    }
+                };
+                return Ok(responseResult);
+            }
+            throw new BadRequestException($"Failed to delete the item with {id} id.");
         }
     }
 }

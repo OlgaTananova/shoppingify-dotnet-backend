@@ -89,7 +89,7 @@ namespace shoppingify_backend.Controllers
                     //};
                     //// Attach cookies to the response
                     //Response.Cookies.Append("Token", token, cookieOptions);
-                    
+
                     return Ok(new { message = "Token was sent in cookies." });
                 }
 
@@ -114,7 +114,43 @@ namespace shoppingify_backend.Controllers
             }
 
             throw new NotFoundException("The user was not found.");
-           
+
+        }
+
+        [HttpPatch("users/me")]
+        [Authorize]
+        public async Task<IActionResult> UpdateUser([FromBody] UpdateUserModel userData)
+        {
+            var user = await _userManager.FindByIdAsync(_userId);
+            if (user == null)
+            {
+                throw new NotFoundException($"Failed to find the user with {_userId} id.");
+            }
+
+            if (user.Email != userData.Email)
+            {
+                var userWithExistingEmail = _userManager.FindByEmailAsync(userData.Email);
+
+                if (userWithExistingEmail != null)
+                {
+                    throw new ConflictException($"User with {userData.Email} email already exists.");
+                }
+            }
+
+            user.Email = userData.Email;
+            user.UserName = userData.Name;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (result.Succeeded)
+            {
+                return Ok(new
+                {
+                    message = "User's profile was successfully updated.",
+                    name = user.UserName,
+                    email = user.Email
+                });
+            }
+            throw new BadRequestException("Failed to update the user's profile.");
         }
 
         [HttpPost("logout")]
@@ -128,7 +164,7 @@ namespace shoppingify_backend.Controllers
 
             await _signInManager.SignOutAsync();
 
-            return Ok(new { message = "You were successfully logged out."});
+            return Ok(new { message = "You were successfully logged out." });
         }
 
     }
