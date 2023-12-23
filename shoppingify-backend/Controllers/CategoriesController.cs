@@ -2,9 +2,9 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using shoppingify_backend.Helpers;
 using shoppingify_backend.Helpers.CustomExceptions;
 using shoppingify_backend.Models;
+using shoppingify_backend.Services;
 using System.Data;
 using System.Security.Claims;
 
@@ -14,12 +14,14 @@ namespace shoppingify_backend.Controllers
     [ApiController] // Allows automatically validate requests' body parameters
     public class CategoriesController : ControllerBase
     {
-        private readonly ApplicationContext _context;
-        private readonly string _userId;
-        public CategoriesController(ApplicationContext context, UserResolverService userResolverService)
+        //private readonly ApplicationContext _context;
+        //private readonly string _userId;
+        private readonly ICategoryService _categoryService;
+        public CategoriesController(ApplicationContext context, IUserResolverService userResolverService, ICategoryService categoryService)
         {
-            _context = context;
-            _userId = userResolverService.GetCurrentUserId();
+            //_context = context;
+            _categoryService = categoryService;
+            //_userId = userResolverService.GetCurrentUserId();
 
         }
 
@@ -27,50 +29,17 @@ namespace shoppingify_backend.Controllers
         [Authorize]
         public async Task<IActionResult> GetCategories()
         {
-            var result = await _context.Categories
-                                            .Include(c => c.Items)
-                                            .Select(cat => new CategoryDTO
-                                            {
-                                                _id = cat.Id.ToString().ToLower(),
-                                                Category = cat.CategoryName,
-                                                Owner = cat.OwnerId.ToString().ToLower(),
-                                                Items = cat.Items.Select(i => i.Id.ToString().ToLower()).ToList()
-                                            })
-                                            .ToListAsync();
-            if (result.Any())
-            {
-               return Ok(result);
-            }
-            return Ok(new List<object>());
-            
+            var result = await _categoryService.GetCategories();
+            return Ok(result);
+
         }
 
         [HttpPost]
         [Authorize]
-        public async Task<IActionResult> CreateCategory([FromBody]CategoryModel category)
+        public async Task<IActionResult> CreateCategory([FromBody] CategoryModel category)
         {
-            var newCategory = new Category
-            {
-                CategoryName = category.Category,
-                OwnerId = _userId
-            };
-
-            _context.Categories.Add(newCategory);
-            var result = await _context.SaveChangesAsync();
-
-            if (result > 0)
-            {
-                return Ok(new CategoryDTO
-                {
-                    _id = newCategory.Id.ToString(),
-                    Category = newCategory.CategoryName,
-                    Owner = newCategory.OwnerId.ToString(),
-                    Items = new List<string>()
-                });
-            }
-
-            throw new BadRequestException("Failed to create the category.");
-
+            var result = await _categoryService.CreateCategory(category);
+            return Ok(result);
         }
     }
 }

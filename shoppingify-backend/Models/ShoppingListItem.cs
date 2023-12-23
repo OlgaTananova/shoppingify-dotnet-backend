@@ -32,6 +32,7 @@ namespace shoppingify_backend.Models
         [JsonIgnore]
         public Category Category { get; set; }
 
+        public Guid OwnerId { get; set; }
         public decimal Quantity { get; set; } = 0.00M;
         public string Units { get; set; } = "pcs";
         public decimal PricePerUnit { get; set; } = 0.00M;

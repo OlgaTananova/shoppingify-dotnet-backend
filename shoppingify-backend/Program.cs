@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using shoppingify_backend.Helpers;
 using shoppingify_backend.Models;
+using shoppingify_backend.Services;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,10 +20,6 @@ builder.Services.AddDbContext<AuthContext>(options =>
 // Add ApplicationContext 
 builder.Services.AddDbContext<ApplicationContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
-
-// Add Service to extract the current user from the http context
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<UserResolverService>();
 
 // Add Identity Provider  + requirements for user's passwords
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -110,6 +107,14 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 builder.Host.UseSerilog();
+
+// Add Service to extract the current user from the http context
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IUserResolverService, UserResolverService>();
+
+// Add Services
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IShoppingListService, ShoppingListService>();
 
 
 var app = builder.Build();

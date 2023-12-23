@@ -17,12 +17,13 @@ namespace shoppingify_backend.Models
         public Guid Id { get; set; }
 
         public string Heading { get; set; } = "Shopping List";
-        public DateTime Date { get; set; }
+        public DateTime Date { get; set; } = DateTime.Now;
         public Guid OwnerId { get; set; }
         public ShoppingListStatus Status { get; set; } = ShoppingListStatus.Active;
 
+        //Navigation Property
+        public ICollection<ShoppingListItem> ShoppingListItems { get; set; } = new List<ShoppingListItem>();
         public decimal SalesTax { get; set; } = 0.00M;
 
-
-    }
+       }
 }

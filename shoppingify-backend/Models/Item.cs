@@ -14,6 +14,7 @@ namespace shoppingify_backend.Models
         public string OwnerId { get; set; }
         public string Image { get; set; } = "";
         public string Note { get; set; } = "";
+        public bool IsDeleted { get; set; } = false;
 
         // Navigation property
         [ForeignKey("CategoryId")]

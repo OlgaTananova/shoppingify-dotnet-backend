@@ -9,6 +9,7 @@ using shoppingify_backend.Data;
 using shoppingify_backend.Helpers;
 using shoppingify_backend.Helpers.CustomExceptions;
 using shoppingify_backend.Models;
+using shoppingify_backend.Services;
 using System.Data;
 using System.Linq.Expressions;
 using System.Text;
@@ -25,12 +26,14 @@ namespace shoppingify_backend.Controllers
         private readonly AuthContext _context;
         private readonly IConfiguration _configuration;
         private readonly string _userId;
-        public AuthController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, AuthContext context, IConfiguration configuration, UserResolverService userResolverService)
+        private readonly IUserResolverService _userResolverService;
+        public AuthController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, AuthContext context, IConfiguration configuration, IUserResolverService userResolverService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _context = context;
             _configuration = configuration;
+            _userResolverService = userResolverService;
             _userId = userResolverService.GetCurrentUserId();
         }
 

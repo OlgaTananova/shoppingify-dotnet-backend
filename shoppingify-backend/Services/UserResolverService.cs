@@ -1,6 +1,6 @@
 ﻿using System.Security.Claims;
 
-namespace shoppingify_backend.Helpers
+namespace shoppingify_backend.Services
 {
     public interface IUserResolverService
     {

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using shoppingify_backend.Helpers;
 using shoppingify_backend.Helpers.CustomExceptions;
 using shoppingify_backend.Models;
+using shoppingify_backend.Services;
 
 namespace shoppingify_backend.Controllers
 {
@@ -14,10 +15,12 @@ namespace shoppingify_backend.Controllers
     {
         private readonly ApplicationContext _context;
         private readonly string _userId;
+        private readonly IUserResolverService _userResolverService;
 
-        public ItemsController(ApplicationContext context, UserResolverService userResolverService)
+        public ItemsController(ApplicationContext context, IUserResolverService userResolverService)
         {
             _context = context;
+            _userResolverService = userResolverService;
             _userId = userResolverService.GetCurrentUserId();
         }
 
@@ -26,7 +29,7 @@ namespace shoppingify_backend.Controllers
 
         public async Task<IActionResult> GetAllItems()
         {
-            var result = await _context.Items.ToListAsync();
+            var result = await _context.Items.Where(i=> i.IsDeleted == false).ToListAsync();
 
             if (result.Count > 0)
             {
@@ -96,7 +99,8 @@ namespace shoppingify_backend.Controllers
                 CategoryId = categoryIdGuid,
                 OwnerId = _userId,
                 Image = item.Image,
-                Note = item.Note
+                Note = item.Note, 
+                IsDeleted = false
             };
 
             // Add item to the batabase and add it to the category
@@ -128,7 +132,7 @@ namespace shoppingify_backend.Controllers
                         _id = updatedCategory.Id.ToString(),
                         Category = updatedCategory.CategoryName,
                         Owner = updatedCategory.OwnerId.ToString(),
-                        Items = updatedCategory.Items.Select(i => i.Id.ToString()).ToList()
+                        Items = updatedCategory.Items.Where(i => i.IsDeleted == false).Select(i => i.Id.ToString()).ToList()
                     }
 
                 };
@@ -197,14 +201,14 @@ namespace shoppingify_backend.Controllers
                         _id = oldCategory.Id.ToString().ToLower(),
                         Category = oldCategory.CategoryName,
                         Owner = oldCategory.OwnerId.ToString().ToLower(),
-                        Items = oldCategory.Items.Select(i => i.Id.ToString().ToLower()).ToList()
+                        Items = oldCategory.Items.Where(i => i.IsDeleted == false).Select(i => i.Id.ToString().ToLower()).ToList()
                     },
                     addToCategory = new CategoryDTO
                     {
                         _id = newCategory.Id.ToString().ToLower(),
                         Category = newCategory.CategoryName,
                         Owner = newCategory.OwnerId.ToString().ToLower(),
-                        Items = newCategory.Items.Select(i => i.Id.ToString().ToLower()).ToList()
+                        Items = newCategory.Items.Where(i => i.IsDeleted == false).Select(i => i.Id.ToString().ToLower()).ToList()
                     }
                 };
                 return Ok(responseResult);
@@ -227,13 +231,18 @@ namespace shoppingify_backend.Controllers
             }
             var uptadedCategory = deletedItem.Category;
 
-            _context.Items.Remove(deletedItem);
+            // Mark the item as deleted
+
+            deletedItem.ItemName = $"{deletedItem.ItemName} - Deleted";
+            deletedItem.IsDeleted = true;
+            _context.Items.Update(deletedItem);
+
             var result = await _context.SaveChangesAsync();
             if (result > 0)
             {
                 var responseResult = new
                 {
-                    deletedItem = new ItemDTO
+                    item = new ItemDTO
                     {
                         _id = deletedItem.Id.ToString(),
                         Name = deletedItem.ItemName,
@@ -247,7 +256,7 @@ namespace shoppingify_backend.Controllers
                         _id = uptadedCategory.Id.ToString(),
                         Owner = uptadedCategory.OwnerId.ToString(),
                         Category = uptadedCategory.CategoryName,
-                        Items = uptadedCategory.Items.Select(i => i.Id.ToString()).ToList()
+                        Items = uptadedCategory.Items.Where(i=> i.IsDeleted == false).Select(i => i.Id.ToString()).ToList()
                     }
                 };
                 return Ok(responseResult);
