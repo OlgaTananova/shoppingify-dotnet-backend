@@ -17,20 +17,17 @@ namespace shoppingify_backend.Models
         public Guid ShoppingListId { get; set; }
         
         [ForeignKey("ShoppingListId")]
-        [JsonIgnore]
-        public ShoppingList ShoppingList { get; set; }
+        public required ShoppingList ShoppingList { get; set; }
 
         public Guid ItemId { get; set; }
 
         [ForeignKey("ItemId")]
-        [JsonIgnore]
-        public Item Item { get; set; }
+        public required Item Item { get; set; }
 
         public Guid CategoryId { get; set; }
 
         [ForeignKey("CategoryId")]
-        [JsonIgnore]
-        public Category Category { get; set; }
+        public required Category Category { get; set; }
 
         public Guid OwnerId { get; set; }
         public decimal Quantity { get; set; } = 0.00M;
@@ -38,6 +35,7 @@ namespace shoppingify_backend.Models
         public decimal PricePerUnit { get; set; } = 0.00M;
         public decimal Price { get; set; } = 0.00M;
         public ItemStatus Status { get; set; } = ItemStatus.Pending;
+        public bool IsDeleted { get; set; } = false;
 
     }
 }

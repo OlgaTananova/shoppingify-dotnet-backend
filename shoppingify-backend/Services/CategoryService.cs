@@ -31,7 +31,7 @@ namespace shoppingify_backend.Services
                                                _id = cat.Id.ToString().ToLower(),
                                                Category = cat.CategoryName,
                                                Owner = cat.OwnerId.ToString().ToLower(),
-                                               Items = cat.Items.Where(i=> i.IsDeleted == false).Select(i => i.Id.ToString().ToLower()).ToList()
+                                               Items = cat.Items.Select(i => i.Id.ToString().ToLower()).ToList()
                                            })
                                            .ToListAsync();
             if (result.Any())
@@ -46,10 +46,15 @@ namespace shoppingify_backend.Services
         {
             string userId = _userResolverService.GetCurrentUserId();
 
+            if (!Guid.TryParse(userId, out var userIdGuid))
+            {
+                throw new BadRequestException("Failed to read the userId.");
+            }
+
             var newCategory = new Category
             {
                 CategoryName = category.Category,
-                OwnerId = userId
+                OwnerId = userIdGuid
             };
 
             _context.Categories.Add(newCategory);

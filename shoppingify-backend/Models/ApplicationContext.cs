@@ -21,23 +21,39 @@ namespace shoppingify_backend.Models
 
             // Add query filters to the context to show only entities related to the current user
             modelBuilder.Entity<Item>()
-                .HasQueryFilter(i => i.OwnerId == _currentUserId);
+                .HasQueryFilter(i => i.OwnerId.ToString() == _currentUserId);
             modelBuilder.Entity<Category>()
-                .HasQueryFilter(i => i.OwnerId == _currentUserId);
+                .HasQueryFilter(i => i.OwnerId.ToString() == _currentUserId);
             modelBuilder.Entity<ShoppingList>()
                 .HasQueryFilter(sl => sl.OwnerId.ToString() == _currentUserId);
             modelBuilder.Entity<ShoppingListItem>()
                 .HasQueryFilter(sli => sli.OwnerId.ToString() == _currentUserId);
 
 
-            //Define Relations for Item
+            //Relations for Item and Category
             modelBuilder.Entity<Category>()
                 .HasMany(c => c.Items)
                 .WithOne(i => i.Category)
                 .HasForeignKey(i => i.CategoryId);
 
-            // Define Relations for ShoppingListItem
-                           
+            modelBuilder.Entity<Item>()
+                .HasMany(i => i.ShoppingListItems)
+                .WithOne(i => i.Item)
+                .HasForeignKey(i => i.ItemId);
+
+            modelBuilder.Entity<Item>()
+                .HasOne(i => i.Category)
+                .WithMany(c => c.Items)
+                .HasForeignKey(i => i.CategoryId);
+
+            // Relations for ShoppingList
+            modelBuilder.Entity<ShoppingList>()
+                .HasMany(sl => sl.ShoppingListItems)
+                .WithOne(sli => sli.ShoppingList)
+                .HasForeignKey(sl => sl.ShoppingListId);
+
+            // Relations for ShoppingListItem
+
             modelBuilder.Entity<ShoppingListItem>()
                 .HasOne(sli => sli.ShoppingList)
                 .WithMany(s => s.ShoppingListItems)
@@ -45,15 +61,16 @@ namespace shoppingify_backend.Models
 
             modelBuilder.Entity<ShoppingListItem>()
                 .HasOne(sli => sli.Item)
-                .WithMany() // If Item doesn't have a navigation property back to ShoppingListItem
+                .WithMany(i => i.ShoppingListItems)
                 .HasForeignKey(sli => sli.ItemId)
-                .OnDelete(DeleteBehavior.NoAction);
-             
+                .OnDelete(DeleteBehavior.Restrict);
+
 
             modelBuilder.Entity<ShoppingListItem>()
                 .HasOne(sli => sli.Category)
-                .WithMany() // If Item doesn't have a navigation property back to ShoppingListItem
-                .HasForeignKey(sli => sli.CategoryId);
+                .WithMany(c => c.ShoppingListItems) 
+                .HasForeignKey(sli => sli.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
 
         }
         public DbSet<Category> Categories { get; set; }

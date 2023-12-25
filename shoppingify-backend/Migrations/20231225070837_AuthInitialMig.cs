@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace shoppingifybackend.Migrations
 {
     /// <inheritdoc />
-    public partial class AuthMigration : Migration
+    public partial class AuthInitialMig : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

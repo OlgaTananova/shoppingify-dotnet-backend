@@ -9,11 +9,11 @@ using shoppingify_backend.Models;
 
 #nullable disable
 
-namespace shoppingifybackend.Migrations.Application
+namespace shoppingifybackend.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    [Migration("20231222070003_UpatedShoppinglistItemMig")]
-    partial class UpatedShoppinglistItemMig
+    [Migration("20231225074620_AppInitMig")]
+    partial class AppInitMig
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -35,9 +35,8 @@ namespace shoppingifybackend.Migrations.Application
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("OwnerId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
@@ -68,9 +67,8 @@ namespace shoppingifybackend.Migrations.Application
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("OwnerId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
@@ -91,6 +89,9 @@ namespace shoppingifybackend.Migrations.Application
                     b.Property<string>("Heading")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uniqueidentifier");
@@ -114,6 +115,9 @@ namespace shoppingifybackend.Migrations.Application
 
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<Guid>("ItemId")
                         .HasColumnType("uniqueidentifier");
@@ -165,15 +169,15 @@ namespace shoppingifybackend.Migrations.Application
             modelBuilder.Entity("shoppingify_backend.Models.ShoppingListItem", b =>
                 {
                     b.HasOne("shoppingify_backend.Models.Category", "Category")
-                        .WithMany()
+                        .WithMany("ShoppingListItems")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("shoppingify_backend.Models.Item", "Item")
-                        .WithMany()
+                        .WithMany("ShoppingListItems")
                         .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("shoppingify_backend.Models.ShoppingList", "ShoppingList")
@@ -192,6 +196,13 @@ namespace shoppingifybackend.Migrations.Application
             modelBuilder.Entity("shoppingify_backend.Models.Category", b =>
                 {
                     b.Navigation("Items");
+
+                    b.Navigation("ShoppingListItems");
+                });
+
+            modelBuilder.Entity("shoppingify_backend.Models.Item", b =>
+                {
+                    b.Navigation("ShoppingListItems");
                 });
 
             modelBuilder.Entity("shoppingify_backend.Models.ShoppingList", b =>

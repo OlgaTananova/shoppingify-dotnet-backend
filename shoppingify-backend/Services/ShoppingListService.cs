@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using shoppingify_backend.Helpers.CustomExceptions;
 using shoppingify_backend.Models;
+using System.Diagnostics.SymbolStore;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 
@@ -10,6 +11,8 @@ namespace shoppingify_backend.Services
     {
         Task<ShoppingListDTO> CreateShoppingList(ShoppingListModel shoppingListData);
         Task<List<ShoppingListDTO>> GetShoppingLists();
+
+        Task<object> DeleteShoppingList(string slId);
     }
     public class ShoppingListService : IShoppingListService
     {
@@ -25,6 +28,14 @@ namespace shoppingify_backend.Services
         {
             string userId = _userResolverService.GetCurrentUserId();
 
+            // If there is the active shopping list - throw exception
+            var activeShL = _context.ShoppingLists.FirstOrDefaultAsync(sl => sl.Status == ShoppingListStatus.Active);
+          
+            if (activeShL.Result != null)
+            {
+                throw new BadRequestException("The active shopping list already exists.");
+            }
+            // Parser ids
             bool parsedUserId = Guid.TryParse(userId, out var userIdGuid);
             bool parsedItemId = Guid.TryParse(shoppingListData.ItemId, out var itemIdGuid);
             bool parsedCategoryId = Guid.TryParse(shoppingListData.CategoryId, out var categoryIdGuid);
@@ -34,13 +45,21 @@ namespace shoppingify_backend.Services
                 throw new BadHttpRequestException("Failed to parse userId or/and itemId or/and categoryId");
             }
 
-            var addedCategory = await _context.Categories.FindAsync(categoryIdGuid);
+            //Find the category and item
 
+            var addedCategory = await _context.Categories.FindAsync(categoryIdGuid);
             if (addedCategory == null)
             {
                 throw new NotFoundException($"Cannot find the category with {shoppingListData.CategoryId}");
             }
 
+            var addedItem = await _context.Items.FindAsync(itemIdGuid);
+            if (addedItem == null)
+            {
+                throw new NotFoundException($"Cannot find the item with {shoppingListData.ItemId},");
+            }
+            
+            // Create a new shopping list and shopping list item
             ShoppingList newShL = new ShoppingList
             {
                 OwnerId = userIdGuid,
@@ -49,6 +68,9 @@ namespace shoppingify_backend.Services
             ShoppingListItem newShLI = new ShoppingListItem
             {
                 ShoppingListId = newShL.Id,
+                ShoppingList = newShL,
+                Item = addedItem,
+                Category = addedCategory,
                 CategoryId = categoryIdGuid,
                 ItemId = itemIdGuid,
                 OwnerId = userIdGuid
@@ -115,6 +137,39 @@ namespace shoppingify_backend.Services
 
             return result;
 
+        }
+
+        public async Task<object> DeleteShoppingList(string slId)
+        {
+            string userId = _userResolverService.GetCurrentUserId();
+
+            if (!Guid.TryParse(slId, out Guid slIdGuid))
+            {
+                throw new BadRequestException("Failed to parse the shopping list id.");
+            }
+
+            var deletedShL = await _context.ShoppingLists.Include(sl => sl.ShoppingListItems).FirstOrDefaultAsync(s => s.Id == slIdGuid);
+            
+            if (deletedShL == null)
+            {
+                throw new NotFoundException($"Failed to find the shopping list with {slId} id.");
+            }
+
+            deletedShL.IsDeleted = true;
+            deletedShL.Status = ShoppingListStatus.Deleted;
+
+            foreach(var sli in deletedShL.ShoppingListItems)
+            {
+                sli.IsDeleted = true;
+            }
+            _context.ShoppingLists.Update(deletedShL);
+            var result = await _context.SaveChangesAsync();
+
+            if (result > 0)
+            {
+                return (new { message = "The shopping list was successfully deleted." });
+            }
+            throw new BadRequestException($"Failed to delete the shopping list with {slId} id.");
         }
 
     }

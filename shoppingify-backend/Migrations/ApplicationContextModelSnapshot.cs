@@ -32,9 +32,8 @@ namespace shoppingifybackend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("OwnerId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
@@ -65,9 +64,8 @@ namespace shoppingifybackend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("OwnerId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
@@ -88,6 +86,9 @@ namespace shoppingifybackend.Migrations
                     b.Property<string>("Heading")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uniqueidentifier");
@@ -111,6 +112,9 @@ namespace shoppingifybackend.Migrations
 
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<Guid>("ItemId")
                         .HasColumnType("uniqueidentifier");
@@ -162,15 +166,15 @@ namespace shoppingifybackend.Migrations
             modelBuilder.Entity("shoppingify_backend.Models.ShoppingListItem", b =>
                 {
                     b.HasOne("shoppingify_backend.Models.Category", "Category")
-                        .WithMany()
+                        .WithMany("ShoppingListItems")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("shoppingify_backend.Models.Item", "Item")
-                        .WithMany()
+                        .WithMany("ShoppingListItems")
                         .HasForeignKey("ItemId")
-                        .OnDelete(DeleteBehavior.NoAction)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("shoppingify_backend.Models.ShoppingList", "ShoppingList")
@@ -189,6 +193,13 @@ namespace shoppingifybackend.Migrations
             modelBuilder.Entity("shoppingify_backend.Models.Category", b =>
                 {
                     b.Navigation("Items");
+
+                    b.Navigation("ShoppingListItems");
+                });
+
+            modelBuilder.Entity("shoppingify_backend.Models.Item", b =>
+                {
+                    b.Navigation("ShoppingListItems");
                 });
 
             modelBuilder.Entity("shoppingify_backend.Models.ShoppingList", b =>

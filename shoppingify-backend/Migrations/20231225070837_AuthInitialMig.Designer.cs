@@ -12,8 +12,8 @@ using shoppingify_backend.Models;
 namespace shoppingifybackend.Migrations
 {
     [DbContext(typeof(AuthContext))]
-    [Migration("20231219003125_AuthMigration")]
-    partial class AuthMigration
+    [Migration("20231225070837_AuthInitialMig")]
+    partial class AuthInitialMig
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

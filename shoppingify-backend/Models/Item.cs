@@ -9,17 +9,19 @@ namespace shoppingify_backend.Models
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public Guid Id { get; set; }
-        public string ItemName { get; set; }
+        public required string ItemName { get; set; }
         public Guid CategoryId { get; set; }
-        public string OwnerId { get; set; }
+        public Guid OwnerId { get; set; }
         public string Image { get; set; } = "";
         public string Note { get; set; } = "";
         public bool IsDeleted { get; set; } = false;
 
         // Navigation property
         [ForeignKey("CategoryId")]
-        [JsonIgnore]
-        public Category Category { get; set; }
+        public required Category Category { get; set; }
+
+        // Navigation property
+        public List<ShoppingListItem> ShoppingListItems { get; set; } = new List<ShoppingListItem>();
 
     }
 }

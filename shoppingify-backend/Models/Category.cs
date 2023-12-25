@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace shoppingify_backend.Models
 {
@@ -8,14 +9,13 @@ namespace shoppingify_backend.Models
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public Guid Id { get; set; }
-        public string CategoryName { get; set; }
-        public ICollection<Item> Items { get; set; }
-        public string OwnerId { get; set; }
+        public required string CategoryName { get; set; }
+        public Guid OwnerId { get; set; }
 
-        public Category()
-        {
-            Items = new HashSet<Item>();
-        }
+        //Navigation properties
+        public List<Item> Items { get; set; } = new List<Item>();
+        public List<ShoppingListItem> ShoppingListItems { get; set; } = new List<ShoppingListItem>();
+
 
     }
 }

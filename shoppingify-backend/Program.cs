@@ -112,9 +112,10 @@ builder.Host.UseSerilog();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserResolverService, UserResolverService>();
 
-// Add Services
+// Add Services to DI container
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IShoppingListService, ShoppingListService>();
+builder.Services.AddScoped<IItemService, ItemService>();
 
 
 var app = builder.Build();
