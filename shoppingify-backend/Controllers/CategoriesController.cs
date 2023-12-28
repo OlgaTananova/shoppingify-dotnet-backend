@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using shoppingify_backend.Helpers.CustomExceptions;
 using shoppingify_backend.Models;
+using shoppingify_backend.Models.ValidationModels;
 using shoppingify_backend.Services;
 using System.Data;
 using System.Security.Claims;

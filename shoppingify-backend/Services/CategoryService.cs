@@ -2,6 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using shoppingify_backend.Helpers.CustomExceptions;
 using shoppingify_backend.Models;
+using shoppingify_backend.Models.Entities;
+using shoppingify_backend.Models.ResponseModels;
+using shoppingify_backend.Models.ValidationModels;
 using System.ComponentModel;
 
 namespace shoppingify_backend.Services
@@ -31,7 +34,7 @@ namespace shoppingify_backend.Services
                                                _id = cat.Id.ToString().ToLower(),
                                                Category = cat.CategoryName,
                                                Owner = cat.OwnerId.ToString().ToLower(),
-                                               Items = cat.Items.Select(i => i.Id.ToString().ToLower()).ToList()
+                                               Items = cat.Items.Where(i=> i.IsDeleted == false).Select(i => i.Id.ToString().ToLower()).ToList()
                                            })
                                            .ToListAsync();
             if (result.Any())

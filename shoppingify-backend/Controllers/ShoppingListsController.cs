@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using shoppingify_backend.Models;
+using shoppingify_backend.Models.Entities;
 using shoppingify_backend.Services;
 
 namespace shoppingify_backend.Controllers

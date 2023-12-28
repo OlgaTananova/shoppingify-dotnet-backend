@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using shoppingify_backend.Helpers;
+using shoppingify_backend.Models.Entities;
 using shoppingify_backend.Services;
 
 namespace shoppingify_backend.Models

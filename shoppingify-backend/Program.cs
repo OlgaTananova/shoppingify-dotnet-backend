@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using shoppingify_backend.Helpers;
 using shoppingify_backend.Models;
+using shoppingify_backend.Models.Entities;
 using shoppingify_backend.Services;
 using System.Text;
 

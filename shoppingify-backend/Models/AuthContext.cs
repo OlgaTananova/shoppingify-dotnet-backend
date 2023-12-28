@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using shoppingify_backend.Models.Entities;
 
 namespace shoppingify_backend.Models
 {

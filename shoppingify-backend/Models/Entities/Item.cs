@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-namespace shoppingify_backend.Models
+namespace shoppingify_backend.Models.Entities
 {
     public class Item
     {

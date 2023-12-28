@@ -1,6 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using shoppingify_backend.Helpers.CustomExceptions;
 using shoppingify_backend.Models;
+using shoppingify_backend.Models.Entities;
+using shoppingify_backend.Models.ResponseModels;
+using shoppingify_backend.Models.ValidationModels;
+using System.Runtime.InteropServices;
+using System.Text.Json;
 
 namespace shoppingify_backend.Services
 {
@@ -26,7 +31,7 @@ namespace shoppingify_backend.Services
 
         public async Task<List<ItemDTO>> GetAllItems()
         {
-            var result = await _context.Items
+            var result = await _context.Items.Where(i => i.IsDeleted == false)
                 .ToListAsync();
 
             if (result.Count > 0)
@@ -134,7 +139,7 @@ namespace shoppingify_backend.Services
                         _id = updatedCategory.Id.ToString(),
                         Category = updatedCategory.CategoryName,
                         Owner = updatedCategory.OwnerId.ToString(),
-                        Items = updatedCategory.Items.Select(i => i.Id.ToString()).ToList()
+                        Items = updatedCategory.Items.Where(i => i.IsDeleted == false).Select(i => i.Id.ToString()).ToList()
                     }
 
                 };
@@ -158,34 +163,54 @@ namespace shoppingify_backend.Services
             {
                 throw new NotFoundException($"The item with id {id} was not found.");
             }
-            //Find the current category and a new category
-
-            Category oldCategory = updatedItem.Category;
-            Category? newCategory;
-
-            if (categoryIdGuid != updatedItem.CategoryId)
-            {
-                newCategory = await _context.Categories.Include(c => c.Items).FirstOrDefaultAsync(cat => cat.Id == categoryIdGuid);
-
-                if (newCategory == null)
-                {
-                    throw new NotFoundException($"The category with id {updatedItem.CategoryId}, {categoryIdGuid} was not found.");
-                }
-            }
-            else
-            {
-                newCategory = oldCategory;
-            }
-
+            
             //Update item
             updatedItem.ItemName = item.Name;
             updatedItem.CategoryId = categoryIdGuid;
             updatedItem.Note = item.Note;
             updatedItem.Image = item.Image;
+            
+            //Update category Id in all shoppinglist items belong to the updated item
+            foreach(var sli in updatedItem.ShoppingListItems)
+            {
+                sli.CategoryId = updatedItem.CategoryId;
+                _context.ShoppingListItems.Update(sli);
+            }
 
             _context.Items.Update(updatedItem);
 
             var result = await _context.SaveChangesAsync();
+
+            // Get all non-deleted categories including those that have the updated item
+            var updatedCategories = await _context.Categories.Include(c => c.Items).Select(c => new CategoryDTO {
+                _id = c.Id.ToString().ToLower(),
+                Owner = c.OwnerId.ToString().ToLower(),
+                Category = c.CategoryName,
+                Items = c.Items.Where(i => i.IsDeleted == false).Select(i => i.Id.ToString().ToLower()).ToList(),
+            }).ToListAsync();
+
+            // Get all non-deleted shopping lists including those that have the updated item
+            var updatedShoppingLists = await _context.ShoppingLists.Where(sl => sl.IsDeleted == false).Include(sl => sl.ShoppingListItems).Select(sl => new ShoppingListDTO
+            {
+                _id = sl.Id.ToString().ToLower(),
+                Heading = sl.Heading,
+                Owner = sl.OwnerId.ToString().ToLower(),
+                Status = sl.Status.ToString().ToLower(),
+                SalesTax = sl.SalesTax,
+                Items = sl.ShoppingListItems.Where(sli => sli.IsDeleted == false).Select(sli => new ShoppingListItemDTO
+                {
+                    ItemId = sli.ItemId.ToString().ToLower(),
+                    CategoryId = sli.CategoryId.ToString().ToLower(),
+                    Units = sli.Units,
+                    Status = sli.Status.ToString().ToLower(),
+                    Quantity = sli.Quantity,
+                    PricePerUnit = sli.PricePerUnit,
+                    Price = sli.Price,
+                    IsDeleted = sli.IsDeleted
+                }).ToList(),
+                Date = sl.Date.ToLongDateString()
+            }).ToListAsync();
+
             if (result > 0)
             {
                 var responseResult = new
@@ -200,20 +225,8 @@ namespace shoppingify_backend.Services
                         Image = updatedItem.Image,
                         IsDeleted = updatedItem.IsDeleted
                     },
-                    deleteFromCategory = new CategoryDTO
-                    {
-                        _id = oldCategory.Id.ToString().ToLower(),
-                        Category = oldCategory.CategoryName,
-                        Owner = oldCategory.OwnerId.ToString().ToLower(),
-                        Items = oldCategory.Items.Select(i => i.Id.ToString().ToLower()).ToList()
-                    },
-                    addToCategory = new CategoryDTO
-                    {
-                        _id = newCategory.Id.ToString().ToLower(),
-                        Category = newCategory.CategoryName,
-                        Owner = newCategory.OwnerId.ToString().ToLower(),
-                        Items = newCategory.Items.Select(i => i.Id.ToString().ToLower()).ToList()
-                    }
+                    updatedCategories = updatedCategories.Count > 0? updatedCategories : new List<CategoryDTO>(),
+                    updatedShoppingLists = updatedShoppingLists.Count > 0 ? updatedShoppingLists : new List<ShoppingListDTO>()
                 };
                 return responseResult;
             }
@@ -238,12 +251,39 @@ namespace shoppingify_backend.Services
             var uptadedCategory = deletedItem.Category;
 
             // Mark the item as deleted
+            // Update shoppingListItems related to this item and mark them deleted
 
             deletedItem.ItemName = $"{deletedItem.ItemName} - Deleted";
             deletedItem.IsDeleted = true;
+            foreach (var sli in deletedItem.ShoppingListItems)
+            {
+                sli.IsDeleted = true;
+                _context.ShoppingListItems.Update(sli);
+            }
 
             _context.Items.Update(deletedItem);
             var result = await _context.SaveChangesAsync();
+
+            // Get the updated shopping lists
+            var updatedShoppingLists = await _context.ShoppingLists.Where(sl => sl.IsDeleted == false).Include(sl => sl.ShoppingListItems).Select(sl => new ShoppingListDTO {
+                _id = sl.Id.ToString().ToLower(),
+                Heading = sl.Heading,
+                Owner = sl.OwnerId.ToString().ToLower(),
+                Status = sl.Status.ToString().ToLower(),
+                SalesTax = sl.SalesTax,
+                Items = sl.ShoppingListItems.Where(sli => sli.IsDeleted == false).Select(sli => new ShoppingListItemDTO
+                {
+                    ItemId = sli.ItemId.ToString().ToLower(),
+                    CategoryId = sli.CategoryId.ToString().ToLower(),
+                    Units = sli.Units,
+                    Status = sli.Status.ToString().ToLower(),
+                    Quantity = sli.Quantity,
+                    PricePerUnit = sli.PricePerUnit,
+                    Price = sli.Price,
+                    IsDeleted = sli.IsDeleted
+                }).ToList(),
+                Date = sl.Date.ToLongDateString()
+            }).ToListAsync();
 
             if (result > 0)
             {
@@ -264,8 +304,9 @@ namespace shoppingify_backend.Services
                         _id = uptadedCategory.Id.ToString(),
                         Owner = uptadedCategory.OwnerId.ToString(),
                         Category = uptadedCategory.CategoryName,
-                        Items = uptadedCategory.Items.Select(i => i.Id.ToString()).ToList()
-                    }
+                        Items = uptadedCategory.Items.Where(i => i.IsDeleted == false).Select(i => i.Id.ToString()).ToList()
+                    },
+                    updatedShoppingLists = updatedShoppingLists.Count > 0 ? updatedShoppingLists : new List<ShoppingListDTO>(),
                 };
                 return responseResult;
             }

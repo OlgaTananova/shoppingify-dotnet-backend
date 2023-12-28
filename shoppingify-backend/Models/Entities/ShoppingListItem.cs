@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-namespace shoppingify_backend.Models
+namespace shoppingify_backend.Models.Entities
 {
     public enum ItemStatus
     {
@@ -15,7 +15,7 @@ namespace shoppingify_backend.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public Guid Id { get; set; }
         public Guid ShoppingListId { get; set; }
-        
+
         [ForeignKey("ShoppingListId")]
         public required ShoppingList ShoppingList { get; set; }
 

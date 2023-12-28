@@ -1,18 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace shoppingify_backend.Models
+namespace shoppingify_backend.Models.ValidationModels
 {
-    public class RegisterModel
+    public class LoginModel
     {
-        [Required]
-        [MinLength(2)]
-        [MaxLength(30)]
-        public string Name { get; set; }
-
         [Required]
         [EmailAddress]
         public string Email { get; set; }
-
         [Required]
         public string Password { get; set; }
     }

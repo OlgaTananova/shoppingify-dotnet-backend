@@ -1,5 +1,5 @@
 ﻿using Microsoft.IdentityModel.Tokens;
-using shoppingify_backend.Models;
+using shoppingify_backend.Models.Entities;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;

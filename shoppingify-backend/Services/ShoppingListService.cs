@@ -1,6 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using shoppingify_backend.Helpers.CustomExceptions;
 using shoppingify_backend.Models;
+using shoppingify_backend.Models.Entities;
+using shoppingify_backend.Models.ResponseModels;
+using shoppingify_backend.Models.ValidationModels;
 using System.Diagnostics.SymbolStore;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -12,7 +15,9 @@ namespace shoppingify_backend.Services
         Task<ShoppingListDTO> CreateShoppingList(ShoppingListModel shoppingListData);
         Task<List<ShoppingListDTO>> GetShoppingLists();
 
-        Task<object> DeleteShoppingList(string slId);
+        Task<DeleteShoppingListDTO> DeleteShoppingList(string slId);
+
+        //Task<ShoppingListDTO> UpdateShoppingListStatus(UpdateShoppingListStatusModel updatedShoppingList);
     }
     public class ShoppingListService : IShoppingListService
     {
@@ -95,7 +100,8 @@ namespace shoppingify_backend.Services
                     Status = newShLI.Status.ToString().ToLower(),
                     Units = newShLI.Units,
                     PricePerUnit = newShLI.PricePerUnit,
-                    Price = newShLI.Price
+                    Price = newShLI.Price,
+                    IsDeleted = newShLI.IsDeleted
                 }
             };
 
@@ -116,7 +122,7 @@ namespace shoppingify_backend.Services
         {
             string userId = _userResolverService.GetCurrentUserId();
 
-           var result = _context.ShoppingLists.Include(i => i.ShoppingListItems).Select(sl => new ShoppingListDTO
+           var result = _context.ShoppingLists.Where(sl => sl.IsDeleted == false).Include(i => i.ShoppingListItems).Select(sl => new ShoppingListDTO
            {
                _id = sl.Id.ToString().ToLower(),
                Heading = sl.Heading,
@@ -124,14 +130,15 @@ namespace shoppingify_backend.Services
                Owner = sl.OwnerId.ToString().ToLower(),
                Status = sl.Status.ToString().ToLower(),
                SalesTax = sl.SalesTax,
-               Items = sl.ShoppingListItems.Select(sli => new ShoppingListItemDTO {
+               Items = sl.ShoppingListItems.Where(sli => sli.IsDeleted == false).Select(sli => new ShoppingListItemDTO {
                    ItemId = sli.ItemId.ToString().ToLower(),
                    CategoryId = sli.CategoryId.ToString().ToLower(),
                    Quantity = sli.Quantity,
                    Status = sli.Status.ToString().ToLower(),
                    Units = sli.Units,
                    PricePerUnit = sli.PricePerUnit,
-                   Price = sli.Price
+                   Price = sli.Price,
+                   IsDeleted = sli.IsDeleted,
                }).ToList()
            }).ToListAsync();
 
@@ -139,15 +146,17 @@ namespace shoppingify_backend.Services
 
         }
 
-        public async Task<object> DeleteShoppingList(string slId)
+        public async Task<DeleteShoppingListDTO> DeleteShoppingList(string slId)
         {
             string userId = _userResolverService.GetCurrentUserId();
 
+            //Parse the shopping list id
             if (!Guid.TryParse(slId, out Guid slIdGuid))
             {
                 throw new BadRequestException("Failed to parse the shopping list id.");
             }
 
+            //Find the deleted shopping list
             var deletedShL = await _context.ShoppingLists.Include(sl => sl.ShoppingListItems).FirstOrDefaultAsync(s => s.Id == slIdGuid);
             
             if (deletedShL == null)
@@ -155,6 +164,7 @@ namespace shoppingify_backend.Services
                 throw new NotFoundException($"Failed to find the shopping list with {slId} id.");
             }
 
+            // Mark it deleted, mark the shopping list items in the list deleted
             deletedShL.IsDeleted = true;
             deletedShL.Status = ShoppingListStatus.Deleted;
 
@@ -165,12 +175,74 @@ namespace shoppingify_backend.Services
             _context.ShoppingLists.Update(deletedShL);
             var result = await _context.SaveChangesAsync();
 
-            if (result > 0)
+            if (result <= 0)
             {
-                return (new { message = "The shopping list was successfully deleted." });
+               throw new BadRequestException($"Failed to delete the shopping list with {slId} id.");
             }
-            throw new BadRequestException($"Failed to delete the shopping list with {slId} id.");
+
+            // Query for remaining shopping lists
+            var remainingLists = await _context.ShoppingLists
+                                               .Include(sl => sl.ShoppingListItems)
+                                               .Where(sl => !sl.IsDeleted)
+                                               .Select(sl => new ShoppingListDTO {
+                                                   _id = sl.Id.ToString().ToLower(),
+                                                   Heading = sl.Heading,
+                                                   Date = sl.Date.ToLongDateString(),
+                                                   Owner = sl.OwnerId.ToString().ToLower(),
+                                                   Status = sl.Status.ToString().ToLower(),
+                                                   SalesTax = sl.SalesTax,
+                                                   Items = sl.ShoppingListItems.Select(sli => new ShoppingListItemDTO
+                                                   {
+                                                       ItemId = sli.ItemId.ToString().ToLower(),
+                                                       CategoryId = sli.CategoryId.ToString().ToLower(),
+                                                       Status = sli.Status.ToString().ToLower(),
+                                                       Price = sli.Price,
+                                                       PricePerUnit = sli.PricePerUnit,
+                                                       Units = sli.Units,
+                                                       Quantity = sli.Quantity,
+                                                       IsDeleted = sli.IsDeleted
+                                                   }).ToList()
+                                               })
+                                               .ToListAsync();
+            return new DeleteShoppingListDTO
+            {
+                Message = "The shopping list was successfully deleted",
+                DeletedShoppingList = new ShoppingListDTO
+                {
+                    _id = deletedShL.Id.ToString().ToLower(),
+                    Heading = deletedShL.Heading,
+                    Date = deletedShL.Date.ToLongDateString(),
+                    Owner = deletedShL.OwnerId.ToString().ToLower(),
+                    Status = deletedShL.Status.ToString().ToLower(),
+                    SalesTax = deletedShL.SalesTax,
+                    Items = deletedShL.ShoppingListItems.Select(sli => new ShoppingListItemDTO
+                    {
+                        ItemId = sli.ItemId.ToString().ToLower(),
+                        CategoryId = sli.CategoryId.ToString().ToLower(),
+                        Status = sli.Status.ToString().ToLower(),
+                        Price = sli.Price,
+                        PricePerUnit = sli.PricePerUnit,
+                        Units = sli.Units,
+                        Quantity = sli.Quantity,
+                        IsDeleted = sli.IsDeleted
+                    }).ToList()
+
+                },
+                RemainingShoppingLists = remainingLists
+            }; 
         }
+
+        //public async Task<ShoppingListDTO> UpdateShoppingListStatus(UpdateShoppingListStatusModel updatedShoppingList)
+        //{
+        //    // Parse id
+
+        //    // Validate status
+
+        //    // find the shopping list by id and update it status
+
+        //    // return the result
+
+        //}
 
     }
 }

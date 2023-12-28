@@ -9,6 +9,8 @@ using shoppingify_backend.Data;
 using shoppingify_backend.Helpers;
 using shoppingify_backend.Helpers.CustomExceptions;
 using shoppingify_backend.Models;
+using shoppingify_backend.Models.Entities;
+using shoppingify_backend.Models.ValidationModels;
 using shoppingify_backend.Services;
 using System.Data;
 using System.Linq.Expressions;

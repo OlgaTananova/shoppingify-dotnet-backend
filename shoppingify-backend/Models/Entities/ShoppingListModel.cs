@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace shoppingify_backend.Models
+namespace shoppingify_backend.Models.Entities
 {
     public class ShoppingListModel
     {
