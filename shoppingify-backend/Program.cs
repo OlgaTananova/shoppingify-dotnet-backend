@@ -117,6 +117,7 @@ builder.Services.AddScoped<IUserResolverService, UserResolverService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IShoppingListService, ShoppingListService>();
 builder.Services.AddScoped<IItemService, ItemService>();
+builder.Services.AddScoped<IShoppingListItemService, ShoppingListItemService>();
 
 
 var app = builder.Build();

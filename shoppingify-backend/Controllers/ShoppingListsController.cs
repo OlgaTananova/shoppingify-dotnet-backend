@@ -68,5 +68,6 @@ namespace shoppingify_backend.Controllers
             var result = await _shoppingListService.UpdateShoppingListSalesTax(updateSLModel);
             return Ok(result);
         }
+
     }
 }

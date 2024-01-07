@@ -14,23 +14,23 @@ namespace shoppingify_backend.Models.Entities
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public Guid Id { get; set; }
-        public Guid ShoppingListId { get; set; }
+        public required Guid ShoppingListId { get; set; }
 
         [ForeignKey("ShoppingListId")]
         public required ShoppingList ShoppingList { get; set; }
 
-        public Guid ItemId { get; set; }
+        public required Guid ItemId { get; set; }
 
         [ForeignKey("ItemId")]
         public required Item Item { get; set; }
 
-        public Guid CategoryId { get; set; }
+        public required Guid CategoryId { get; set; }
 
         [ForeignKey("CategoryId")]
         public required Category Category { get; set; }
 
-        public Guid OwnerId { get; set; }
-        public decimal Quantity { get; set; } = 0.00M;
+        public required Guid OwnerId { get; set; }
+        public decimal Quantity { get; set; } = 1.00M;
         public string Units { get; set; } = "pcs";
         public decimal PricePerUnit { get; set; } = 0.00M;
         public decimal Price { get; set; } = 0.00M;

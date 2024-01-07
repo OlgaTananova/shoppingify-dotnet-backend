@@ -199,6 +199,7 @@ namespace shoppingify_backend.Services
                 SalesTax = sl.SalesTax,
                 Items = sl.ShoppingListItems.Where(sli => sli.IsDeleted == false).Select(sli => new ShoppingListItemDTO
                 {
+                    _id = sli.Id.ToString().ToLower(),
                     ItemId = sli.ItemId.ToString().ToLower(),
                     CategoryId = sli.CategoryId.ToString().ToLower(),
                     Units = sli.Units,
@@ -273,6 +274,7 @@ namespace shoppingify_backend.Services
                 SalesTax = sl.SalesTax,
                 Items = sl.ShoppingListItems.Where(sli => sli.IsDeleted == false).Select(sli => new ShoppingListItemDTO
                 {
+                    _id = sli.Id.ToString().ToLower(),
                     ItemId = sli.ItemId.ToString().ToLower(),
                     CategoryId = sli.CategoryId.ToString().ToLower(),
                     Units = sli.Units,

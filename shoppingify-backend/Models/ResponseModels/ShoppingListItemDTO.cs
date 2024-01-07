@@ -6,6 +6,7 @@ namespace shoppingify_backend.Models.ResponseModels
 {
     public class ShoppingListItemDTO
     {
+        public required string _id { get; set; }
         public required string ItemId { get; set; }
 
         public required string CategoryId { get; set; }

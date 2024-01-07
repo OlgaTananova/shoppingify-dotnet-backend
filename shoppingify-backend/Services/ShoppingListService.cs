@@ -12,7 +12,7 @@ namespace shoppingify_backend.Services
 {
     public interface IShoppingListService
     {
-        Task<ShoppingListDTO> CreateShoppingList(ShoppingListModel shoppingListData);
+        Task<AddShoppingListDTO> CreateShoppingList(ShoppingListModel shoppingListData);
         Task<List<ShoppingListDTO>> GetShoppingLists();
 
         Task<DeleteShoppingListDTO> DeleteShoppingList(string slId);
@@ -33,7 +33,7 @@ namespace shoppingify_backend.Services
             _context = context;
             _userResolverService = userResolverService;
         }
-        public async Task<ShoppingListDTO> CreateShoppingList(ShoppingListModel shoppingListData)
+        public async Task<AddShoppingListDTO> CreateShoppingList(ShoppingListModel shoppingListData)
         {
             string userId = _userResolverService.GetCurrentUserId();
 
@@ -98,6 +98,7 @@ namespace shoppingify_backend.Services
             {
                 new ShoppingListItemDTO
                 {
+                    _id = newShLI.Id.ToString().ToLower(),
                     ItemId = newShLI.ItemId.ToString(),
                     CategoryId = newShLI.CategoryId.ToString(),
                     Quantity = newShLI.Quantity,
@@ -109,15 +110,19 @@ namespace shoppingify_backend.Services
                 }
             };
 
-            var result = new ShoppingListDTO
+            var result = new AddShoppingListDTO
             {
-                _id = newShL.Id.ToString(),
-                Heading = newShL.Heading,
-                Date = newShL.Date.ToLongDateString(),
-                Owner = newShL.OwnerId.ToString(),
-                Status = newShL.Status.ToString().ToLower(),
-                SalesTax = newShL.SalesTax,
-                Items = itemsInShL
+                Message = "The new shopping list was successfully created.",
+                AddedShoppingList = new ShoppingListDTO
+                {
+                    _id = newShL.Id.ToString(),
+                    Heading = newShL.Heading,
+                    Date = newShL.Date.ToLongDateString(),
+                    Owner = newShL.OwnerId.ToString(),
+                    Status = newShL.Status.ToString().ToLower(),
+                    SalesTax = newShL.SalesTax,
+                    Items = itemsInShL
+                }
             };
 
             return result;
@@ -136,6 +141,7 @@ namespace shoppingify_backend.Services
                 SalesTax = sl.SalesTax,
                 Items = sl.ShoppingListItems.Where(sli => sli.IsDeleted == false).Select(sli => new ShoppingListItemDTO
                 {
+                    _id = sli.Id.ToString().ToLower(),
                     ItemId = sli.ItemId.ToString().ToLower(),
                     CategoryId = sli.CategoryId.ToString().ToLower(),
                     Quantity = sli.Quantity,
@@ -199,6 +205,7 @@ namespace shoppingify_backend.Services
                                                    SalesTax = sl.SalesTax,
                                                    Items = sl.ShoppingListItems.Select(sli => new ShoppingListItemDTO
                                                    {
+                                                       _id = sli.Id.ToString().ToLower(),
                                                        ItemId = sli.ItemId.ToString().ToLower(),
                                                        CategoryId = sli.CategoryId.ToString().ToLower(),
                                                        Status = sli.Status.ToString().ToLower(),
@@ -223,6 +230,7 @@ namespace shoppingify_backend.Services
                     SalesTax = deletedShL.SalesTax,
                     Items = deletedShL.ShoppingListItems.Select(sli => new ShoppingListItemDTO
                     {
+                        _id = sli.Id.ToString().ToLower(),
                         ItemId = sli.ItemId.ToString().ToLower(),
                         CategoryId = sli.CategoryId.ToString().ToLower(),
                         Status = sli.Status.ToString().ToLower(),
@@ -281,6 +289,7 @@ namespace shoppingify_backend.Services
                 Date = sl.Date.ToLongDateString(),
                 Items = sl.ShoppingListItems.Select(sli => new ShoppingListItemDTO
                 {
+                    _id = sli.Id.ToString().ToLower(),
                     CategoryId = sli.CategoryId.ToString().ToLower(),
                     Units = sli.Units,
                     Status = sli.Status.ToString(),
@@ -305,6 +314,7 @@ namespace shoppingify_backend.Services
                     SalesTax = updatedSL.SalesTax,
                     Items = updatedSL.ShoppingListItems.Select(sli => new ShoppingListItemDTO
                     {
+                        _id = sli.Id.ToString().ToLower(),
                         ItemId = sli.ItemId.ToString().ToLower(),
                         CategoryId = sli.CategoryId.ToString().ToLower(),
                         Status = sli.Status.ToString().ToLower(),
@@ -357,6 +367,7 @@ namespace shoppingify_backend.Services
                 Date = sl.Date.ToLongDateString(),
                 Items = sl.ShoppingListItems.Select(sli => new ShoppingListItemDTO
                 {
+                    _id = sli.Id.ToString().ToLower(),
                     CategoryId = sli.CategoryId.ToString().ToLower(),
                     Units = sli.Units,
                     Status = sli.Status.ToString(),
@@ -381,6 +392,7 @@ namespace shoppingify_backend.Services
                     SalesTax = updatedSL.SalesTax,
                     Items = updatedSL.ShoppingListItems.Select(sli => new ShoppingListItemDTO
                     {
+                        _id = sli.Id.ToString().ToLower(),
                         ItemId = sli.ItemId.ToString().ToLower(),
                         CategoryId = sli.CategoryId.ToString().ToLower(),
                         Status = sli.Status.ToString().ToLower(),
@@ -431,6 +443,7 @@ namespace shoppingify_backend.Services
                 Date = sl.Date.ToLongDateString(),
                 Items = sl.ShoppingListItems.Select(sli => new ShoppingListItemDTO
                 {
+                    _id = sli.Id.ToString().ToLower(),
                     CategoryId = sli.CategoryId.ToString().ToLower(),
                     Units = sli.Units,
                     Status = sli.Status.ToString(),
@@ -455,6 +468,7 @@ namespace shoppingify_backend.Services
                     SalesTax = updatedSL.SalesTax,
                     Items = updatedSL.ShoppingListItems.Select(sli => new ShoppingListItemDTO
                     {
+                        _id = sli.Id.ToString().ToLower(),
                         ItemId = sli.ItemId.ToString().ToLower(),
                         CategoryId = sli.CategoryId.ToString().ToLower(),
                         Status = sli.Status.ToString().ToLower(),
@@ -468,6 +482,6 @@ namespace shoppingify_backend.Services
                 AllShoppingLists = allSL
             };
         }
-             
+
     }
 }
