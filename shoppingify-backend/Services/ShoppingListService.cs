@@ -1,12 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using shoppingify_backend.Helpers;
 using shoppingify_backend.Helpers.CustomExceptions;
 using shoppingify_backend.Models;
 using shoppingify_backend.Models.Entities;
 using shoppingify_backend.Models.ResponseModels;
 using shoppingify_backend.Models.ValidationModels;
-using System.Diagnostics.SymbolStore;
-using System.Text.Json;
-using System.Text.Json.Serialization.Metadata;
 
 namespace shoppingify_backend.Services
 {
@@ -121,6 +119,7 @@ namespace shoppingify_backend.Services
                     Owner = newShL.OwnerId.ToString(),
                     Status = newShL.Status.ToString().ToLower(),
                     SalesTax = newShL.SalesTax,
+                    IsDeleted = newShL.IsDeleted,
                     Items = itemsInShL
                 }
             };
@@ -131,27 +130,7 @@ namespace shoppingify_backend.Services
         {
             string userId = _userResolverService.GetCurrentUserId();
 
-            var result = _context.ShoppingLists.Where(sl => sl.IsDeleted == false).Include(i => i.ShoppingListItems).Select(sl => new ShoppingListDTO
-            {
-                _id = sl.Id.ToString().ToLower(),
-                Heading = sl.Heading,
-                Date = sl.Date.ToLongDateString(),
-                Owner = sl.OwnerId.ToString().ToLower(),
-                Status = sl.Status.ToString().ToLower(),
-                SalesTax = sl.SalesTax,
-                Items = sl.ShoppingListItems.Where(sli => sli.IsDeleted == false).Select(sli => new ShoppingListItemDTO
-                {
-                    _id = sli.Id.ToString().ToLower(),
-                    ItemId = sli.ItemId.ToString().ToLower(),
-                    CategoryId = sli.CategoryId.ToString().ToLower(),
-                    Quantity = sli.Quantity,
-                    Status = sli.Status.ToString().ToLower(),
-                    Units = sli.Units,
-                    PricePerUnit = sli.PricePerUnit,
-                    Price = sli.Price,
-                    IsDeleted = sli.IsDeleted,
-                }).ToList()
-            }).ToListAsync();
+            var result = _context.ShoppingLists.Where(sl => sl.IsDeleted == false).Include(i => i.ShoppingListItems).Select(sl => MappingHandler.MapToShoppingListDTO(sl)).ToListAsync();
 
             return result;
 
@@ -191,32 +170,6 @@ namespace shoppingify_backend.Services
                 throw new BadRequestException($"Failed to delete the shopping list with {slId} id.");
             }
 
-            // Query for remaining shopping lists
-            var remainingLists = await _context.ShoppingLists
-                                               .Include(sl => sl.ShoppingListItems)
-                                               .Where(sl => !sl.IsDeleted)
-                                               .Select(sl => new ShoppingListDTO
-                                               {
-                                                   _id = sl.Id.ToString().ToLower(),
-                                                   Heading = sl.Heading,
-                                                   Date = sl.Date.ToLongDateString(),
-                                                   Owner = sl.OwnerId.ToString().ToLower(),
-                                                   Status = sl.Status.ToString().ToLower(),
-                                                   SalesTax = sl.SalesTax,
-                                                   Items = sl.ShoppingListItems.Select(sli => new ShoppingListItemDTO
-                                                   {
-                                                       _id = sli.Id.ToString().ToLower(),
-                                                       ItemId = sli.ItemId.ToString().ToLower(),
-                                                       CategoryId = sli.CategoryId.ToString().ToLower(),
-                                                       Status = sli.Status.ToString().ToLower(),
-                                                       Price = sli.Price,
-                                                       PricePerUnit = sli.PricePerUnit,
-                                                       Units = sli.Units,
-                                                       Quantity = sli.Quantity,
-                                                       IsDeleted = sli.IsDeleted
-                                                   }).ToList()
-                                               })
-                                               .ToListAsync();
             return new DeleteShoppingListDTO
             {
                 Message = "The shopping list was successfully deleted",
@@ -224,25 +177,13 @@ namespace shoppingify_backend.Services
                 {
                     _id = deletedShL.Id.ToString().ToLower(),
                     Heading = deletedShL.Heading,
-                    Date = deletedShL.Date.ToLongDateString(),
                     Owner = deletedShL.OwnerId.ToString().ToLower(),
                     Status = deletedShL.Status.ToString().ToLower(),
                     SalesTax = deletedShL.SalesTax,
-                    Items = deletedShL.ShoppingListItems.Select(sli => new ShoppingListItemDTO
-                    {
-                        _id = sli.Id.ToString().ToLower(),
-                        ItemId = sli.ItemId.ToString().ToLower(),
-                        CategoryId = sli.CategoryId.ToString().ToLower(),
-                        Status = sli.Status.ToString().ToLower(),
-                        Price = sli.Price,
-                        PricePerUnit = sli.PricePerUnit,
-                        Units = sli.Units,
-                        Quantity = sli.Quantity,
-                        IsDeleted = sli.IsDeleted
-                    }).ToList()
-
-                },
-                RemainingShoppingLists = remainingLists
+                    Date = deletedShL.Date.ToLongDateString(),
+                    IsDeleted = deletedShL.IsDeleted,
+                    Items = deletedShL.ShoppingListItems.Select(MappingHandler.MapToShoppingListItemDTO).ToList(),
+                }
             };
         }
 
@@ -278,54 +219,11 @@ namespace shoppingify_backend.Services
             {
                 throw new BadRequestException("Failed to update the shopping list status");
             }
-            // Get all shopping lists
-            var allSL = await _context.ShoppingLists.Include(sl => sl.ShoppingListItems).Where(sl => !sl.IsDeleted).Select(sl => new ShoppingListDTO
-            {
-                _id = sl.Id.ToString().ToLower(),
-                Heading = sl.Heading,
-                Owner = sl.OwnerId.ToString().ToLower(),
-                Status = sl.Status.ToString().ToLower(),
-                SalesTax = sl.SalesTax,
-                Date = sl.Date.ToLongDateString(),
-                Items = sl.ShoppingListItems.Select(sli => new ShoppingListItemDTO
-                {
-                    _id = sli.Id.ToString().ToLower(),
-                    CategoryId = sli.CategoryId.ToString().ToLower(),
-                    Units = sli.Units,
-                    Status = sli.Status.ToString(),
-                    Quantity = sli.Quantity,
-                    PricePerUnit = sli.PricePerUnit,
-                    Price = sli.Price,
-                    ItemId = sli.ItemId.ToString().ToLower(),
-                    IsDeleted = sli.IsDeleted,
-                }).ToList(),
-            }).ToListAsync();
 
             return new UpdateShoppingListDTO
             {
                 Message = "The shopping list status was successfully updated.",
-                UpdatedShoppingList = new ShoppingListDTO
-                {
-                    _id = updatedSL.Id.ToString().ToLower(),
-                    Heading = updatedSL.Heading,
-                    Date = updatedSL.Date.ToLongDateString(),
-                    Owner = updatedSL.OwnerId.ToString().ToLower(),
-                    Status = updatedSL.Status.ToString().ToLower(),
-                    SalesTax = updatedSL.SalesTax,
-                    Items = updatedSL.ShoppingListItems.Select(sli => new ShoppingListItemDTO
-                    {
-                        _id = sli.Id.ToString().ToLower(),
-                        ItemId = sli.ItemId.ToString().ToLower(),
-                        CategoryId = sli.CategoryId.ToString().ToLower(),
-                        Status = sli.Status.ToString().ToLower(),
-                        Price = sli.Price,
-                        PricePerUnit = sli.PricePerUnit,
-                        Units = sli.Units,
-                        Quantity = sli.Quantity,
-                        IsDeleted = sli.IsDeleted
-                    }).ToList()
-                },
-                AllShoppingLists = allSL
+                UpdatedShoppingList = MappingHandler.MapToShoppingListDTO(updatedSL)
             };
 
         }
@@ -356,54 +254,11 @@ namespace shoppingify_backend.Services
                 throw new BadRequestException("Failed to update the shopping list heading");
             }
 
-            // Get all shopping lists
-            var allSL = await _context.ShoppingLists.Include(sl => sl.ShoppingListItems).Where(sl => !sl.IsDeleted).Select(sl => new ShoppingListDTO
-            {
-                _id = sl.Id.ToString().ToLower(),
-                Heading = sl.Heading,
-                Owner = sl.OwnerId.ToString().ToLower(),
-                Status = sl.Status.ToString().ToLower(),
-                SalesTax = sl.SalesTax,
-                Date = sl.Date.ToLongDateString(),
-                Items = sl.ShoppingListItems.Select(sli => new ShoppingListItemDTO
-                {
-                    _id = sli.Id.ToString().ToLower(),
-                    CategoryId = sli.CategoryId.ToString().ToLower(),
-                    Units = sli.Units,
-                    Status = sli.Status.ToString(),
-                    Quantity = sli.Quantity,
-                    PricePerUnit = sli.PricePerUnit,
-                    Price = sli.Price,
-                    ItemId = sli.ItemId.ToString().ToLower(),
-                    IsDeleted = sli.IsDeleted,
-                }).ToList(),
-            }).ToListAsync();
-
+           
             return new UpdateShoppingListDTO
             {
                 Message = "The shopping list heading was successfully updated.",
-                UpdatedShoppingList = new ShoppingListDTO
-                {
-                    _id = updatedSL.Id.ToString().ToLower(),
-                    Heading = updatedSL.Heading,
-                    Date = updatedSL.Date.ToLongDateString(),
-                    Owner = updatedSL.OwnerId.ToString().ToLower(),
-                    Status = updatedSL.Status.ToString().ToLower(),
-                    SalesTax = updatedSL.SalesTax,
-                    Items = updatedSL.ShoppingListItems.Select(sli => new ShoppingListItemDTO
-                    {
-                        _id = sli.Id.ToString().ToLower(),
-                        ItemId = sli.ItemId.ToString().ToLower(),
-                        CategoryId = sli.CategoryId.ToString().ToLower(),
-                        Status = sli.Status.ToString().ToLower(),
-                        Price = sli.Price,
-                        PricePerUnit = sli.PricePerUnit,
-                        Units = sli.Units,
-                        Quantity = sli.Quantity,
-                        IsDeleted = sli.IsDeleted
-                    }).ToList()
-                },
-                AllShoppingLists = allSL
+                UpdatedShoppingList = MappingHandler.MapToShoppingListDTO(updatedSL),
             };
         }
         public async Task<UpdateShoppingListDTO> UpdateShoppingListSalesTax(UpdateShoppingListSalesTaxModel updatedShoppingList)
@@ -432,56 +287,11 @@ namespace shoppingify_backend.Services
                 throw new BadRequestException("Failed to update the shopping list sales tax.");
             }
 
-            // Get all shopping lists
-            var allSL = await _context.ShoppingLists.Include(sl => sl.ShoppingListItems).Where(sl => !sl.IsDeleted).Select(sl => new ShoppingListDTO
-            {
-                _id = sl.Id.ToString().ToLower(),
-                Heading = sl.Heading,
-                Owner = sl.OwnerId.ToString().ToLower(),
-                Status = sl.Status.ToString().ToLower(),
-                SalesTax = sl.SalesTax,
-                Date = sl.Date.ToLongDateString(),
-                Items = sl.ShoppingListItems.Select(sli => new ShoppingListItemDTO
-                {
-                    _id = sli.Id.ToString().ToLower(),
-                    CategoryId = sli.CategoryId.ToString().ToLower(),
-                    Units = sli.Units,
-                    Status = sli.Status.ToString(),
-                    Quantity = sli.Quantity,
-                    PricePerUnit = sli.PricePerUnit,
-                    Price = sli.Price,
-                    ItemId = sli.ItemId.ToString().ToLower(),
-                    IsDeleted = sli.IsDeleted,
-                }).ToList(),
-            }).ToListAsync();
-
             return new UpdateShoppingListDTO
             {
                 Message = "The shopping list sales tax was successfully updated.",
-                UpdatedShoppingList = new ShoppingListDTO
-                {
-                    _id = updatedSL.Id.ToString().ToLower(),
-                    Heading = updatedSL.Heading,
-                    Date = updatedSL.Date.ToLongDateString(),
-                    Owner = updatedSL.OwnerId.ToString().ToLower(),
-                    Status = updatedSL.Status.ToString().ToLower(),
-                    SalesTax = updatedSL.SalesTax,
-                    Items = updatedSL.ShoppingListItems.Select(sli => new ShoppingListItemDTO
-                    {
-                        _id = sli.Id.ToString().ToLower(),
-                        ItemId = sli.ItemId.ToString().ToLower(),
-                        CategoryId = sli.CategoryId.ToString().ToLower(),
-                        Status = sli.Status.ToString().ToLower(),
-                        Price = sli.Price,
-                        PricePerUnit = sli.PricePerUnit,
-                        Units = sli.Units,
-                        Quantity = sli.Quantity,
-                        IsDeleted = sli.IsDeleted
-                    }).ToList()
-                },
-                AllShoppingLists = allSL
+                UpdatedShoppingList = MappingHandler.MapToShoppingListDTO(updatedSL),
             };
         }
-
     }
 }

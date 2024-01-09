@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using shoppingify_backend.Helpers;
 using shoppingify_backend.Helpers.CustomExceptions;
 using shoppingify_backend.Models;
 using shoppingify_backend.Models.Entities;
@@ -9,7 +10,7 @@ namespace shoppingify_backend.Services
 {
     public interface IShoppingListItemService
     {
-        public Task<UpdateShoppingListShortDTO> AddItemToShoppingList(AddItemToShoppingListModel addItemToSL);
+        public Task<UpdateShoppingListDTO> AddItemToShoppingList(AddItemToShoppingListModel addItemToSL);
         //public Task<UpdateShoppingListDTO> DeleteItemFromShoppingList(DeleteItemFromShoppingListModel deleteItemFromSL);
         //public Task<UpdateShoppingListDTO> ChangeItemQuantity(ChangeItemQuantityModel changeItemQtyModel);
         //public Task<UpdateShoppingListDTO> ChangeItemStatus(ChangeItemStatusModel changeItemStatusModel);
@@ -29,7 +30,7 @@ namespace shoppingify_backend.Services
             _context = context;
             _userResolverService = userResolverService;
         }
-        public async Task<UpdateShoppingListShortDTO> AddItemToShoppingList(AddItemToShoppingListModel addItemToSl)
+        public async Task<UpdateShoppingListDTO> AddItemToShoppingList(AddItemToShoppingListModel addItemToSl)
         {
             string userId = _userResolverService.GetCurrentUserId();
 
@@ -71,30 +72,10 @@ namespace shoppingify_backend.Services
                 throw new BadImageFormatException("Failed to add a new item to the shopping list");
             }
 
-            return new UpdateShoppingListShortDTO
+            return new UpdateShoppingListDTO
             {
                 Message = "The item was successfully added to the shopping list",
-                UpdatedShoppingList = new ShoppingListDTO
-                {
-                    _id = updatedSL.Id.ToString().ToLower(),
-                    Heading = updatedSL.Heading,
-                    Date = updatedSL.Date.ToLongDateString(),
-                    Owner = updatedSL.OwnerId.ToString().ToLower(),
-                    Status = updatedSL.Status.ToString().ToLower(),
-                    SalesTax = updatedSL.SalesTax,
-                    Items = updatedSL.ShoppingListItems.Select(sli => new ShoppingListItemDTO
-                    {
-                        _id = sli.Id.ToString().ToLower(),
-                        ItemId = sli.ItemId.ToString().ToLower(),
-                        CategoryId = sli.CategoryId.ToString().ToLower(),
-                        Units = sli.Units,
-                        Status = sli.Status.ToString().ToLower(),
-                        Quantity = sli.Quantity,
-                        PricePerUnit = sli.PricePerUnit,
-                        Price = sli.Price,
-                        IsDeleted = sli.IsDeleted,
-                    }).ToList()
-                }
+                UpdatedShoppingList = MappingHandler.MapToShoppingListDTO(updatedSL),
             };
         }
     }

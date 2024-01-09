@@ -4,6 +4,5 @@
     {
         public required string Message { get; set; }
         public required ShoppingListDTO UpdatedShoppingList { get; set; }
-        public required List<ShoppingListDTO> AllShoppingLists { get; set; }
     }
 }
