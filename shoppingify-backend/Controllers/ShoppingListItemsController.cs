@@ -66,5 +66,12 @@ namespace shoppingify_backend.Controllers
             return Ok(result);
         }
 
+        [HttpDelete("/ShoppingLists/deleteItem")]
+        [Authorize]
+        public async Task<IActionResult> DeleteItemFromShoppingList([FromBody] DeleteItemFromShoppingListModel deleteItem)
+        {
+            var result = await _shoppingListItemService.DeleteItemFromShoppingList(deleteItem);
+            return Ok(result);
+        }
     }
 }

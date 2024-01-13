@@ -19,7 +19,6 @@ namespace shoppingify_backend.Controllers
 
         [HttpPost]
         [Authorize]
-
         public async Task<IActionResult> CreateShoppingList([FromBody] ShoppingListModel shoppingListData)
         {
             var result = await _shoppingListService.CreateShoppingList(shoppingListData);

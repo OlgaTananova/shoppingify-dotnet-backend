@@ -11,11 +11,10 @@ namespace shoppingify_backend.Services
     public interface IShoppingListItemService
     {
         public Task<UpdateShoppingListDTO> AddItemToShoppingList(AddItemToShoppingListModel addItemToSL);
-        //public Task<UpdateShoppingListDTO> DeleteItemFromShoppingList(DeleteItemFromShoppingListModel deleteItemFromSL);
+        public Task<UpdateShoppingListDTO> DeleteItemFromShoppingList(DeleteItemFromShoppingListModel deleteItemFromSL);
         public Task<UpdateShoppingListDTO> ChangeItemQuantity(ChangeItemQuantityModel changeItemQtyModel);
         public Task<UpdateShoppingListDTO> ChangeItemStatus(ChangeItemStatusModel changeItemStatusModel);
         public Task<UpdateShoppingListDTO> ChangeItemUnits(ChangeItemUnitsModel changeItemUnitsModel);
-
         public Task<UpdateShoppingListDTO> ChangeItemPrice(ChangeItemPriceModel changeItemPriceModel);
         public Task<UpdateShoppingListDTO> ChangeItemPricePerUnit(ChangeItemPricePerUnitModel changeItemPricePerUnit);
         public Task<(ShoppingList, ShoppingListItem)> FindShoppingListAndShoppingListItem(string shoppingListId, string shoppingListItemId);
@@ -216,6 +215,26 @@ namespace shoppingify_backend.Services
             return new UpdateShoppingListDTO
             {
                 Message = "The shopping item's price was successfully updated.",
+                UpdatedShoppingList = MappingHandler.MapToShoppingListDTO(updatedShoppingList),
+            };
+        }
+        public async Task<UpdateShoppingListDTO> DeleteItemFromShoppingList(DeleteItemFromShoppingListModel deleteItemFromShoppingList)
+        {
+            (ShoppingList updatedShoppingList, ShoppingListItem deletedShoppingListItem) = await FindShoppingListAndShoppingListItem(deleteItemFromShoppingList.ShoppingListId, deleteItemFromShoppingList.ShoppingListItemId);
+
+            // Mark the shopping list item deleted and save the changes
+            deletedShoppingListItem.IsDeleted = true;
+            _context.ShoppingListItems.Update(deletedShoppingListItem);
+
+            var result = await _context.SaveChangesAsync();
+            if (result <= 0)
+            {
+                throw new BadRequestException("Failed to delete the shopping item.");
+            }
+
+            return new UpdateShoppingListDTO
+            {
+                Message = "The shopping item was successfully deleted.",
                 UpdatedShoppingList = MappingHandler.MapToShoppingListDTO(updatedShoppingList),
             };
         }
