@@ -27,7 +27,7 @@ namespace shoppingify_backend.Helpers
                 _id = sli.Id.ToString().ToLower(),
                 CategoryId = sli.CategoryId.ToString().ToLower(),
                 Units = sli.Units,
-                Status = sli.Status.ToString(),
+                Status = sli.Status.ToString().ToLower(),
                 Quantity = sli.Quantity,
                 PricePerUnit = sli.PricePerUnit,
                 Price = sli.Price,
