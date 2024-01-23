@@ -1,0 +1,14 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\shoppingify-backend",
+    "\\shoppingify-backend\\Controllers",
+    "\\shoppingify-backend\\Helpers",
+    "\\shoppingify-backend\\Models",
+    "\\shoppingify-backend\\Models\\ResponseModels",
+    "\\shoppingify-backend\\Models\\ValidationModels",
+    "\\shoppingify-backend\\Services"
+  ],
+  "SelectedNode": "\\shoppingify-backend\\Helpers\\ExtractTextFromPdfUsingOCR.cs",
+  "PreviewInSolutionExplorer": false
+}

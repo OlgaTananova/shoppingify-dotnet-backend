@@ -118,6 +118,7 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IShoppingListService, ShoppingListService>();
 builder.Services.AddScoped<IItemService, ItemService>();
 builder.Services.AddScoped<IShoppingListItemService, ShoppingListItemService>();
+builder.Services.AddScoped<IBillService, BillService>();
 
 
 var app = builder.Build();
