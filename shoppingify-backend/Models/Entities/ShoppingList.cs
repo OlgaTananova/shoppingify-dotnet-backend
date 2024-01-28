@@ -21,7 +21,7 @@ namespace shoppingify_backend.Models.Entities
 
         public string Heading { get; set; } = "Shopping List";
         public DateTime Date { get; set; } = DateTime.Now;
-        public Guid OwnerId { get; set; }
+        public required Guid OwnerId { get; set; }
         public ShoppingListStatus Status { get; set; } = ShoppingListStatus.Active;
 
         //Navigation Property

@@ -94,7 +94,7 @@ namespace shoppingify_backend.Services
 
             if (result <= 0)
             {
-                throw new BadImageFormatException("Failed to add a new item to the shopping list");
+                throw new BadRequestException("Failed to add a new item to the shopping list");
             }
 
             return new UpdateShoppingListDTO

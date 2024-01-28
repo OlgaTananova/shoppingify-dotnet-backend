@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using shoppingify_backend.Models.ValidationModels;
 using shoppingify_backend.Services;
 
 namespace shoppingify_backend.Controllers
@@ -25,5 +26,12 @@ namespace shoppingify_backend.Controllers
             return Ok(result);
         }
 
+        [HttpPost("/upload-list")]
+        [Authorize]
+        public async Task<IActionResult> UploadList(UploadShoppingListModel uploadShoppingList)
+        {
+            var result = await _billService.UploadShoppingList(uploadShoppingList);
+            return Ok(result);
+        }
     }
 }

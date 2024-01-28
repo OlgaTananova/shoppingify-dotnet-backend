@@ -11,6 +11,7 @@
     public class GPTShoppingListItemDTO
     {
         public required string ItemName { get; set; }
+        public string DatabaseItemName { get; set; } = "";
         public required string ItemUnits { get; set; }
         public required decimal ItemQuantity  { get; set; }
         public required decimal ItemPricePerUnit { get; set; }
