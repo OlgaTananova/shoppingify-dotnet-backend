@@ -38,7 +38,7 @@ namespace shoppingify_backend.Helpers
 
             };
 
-            var result = JsonSerializer.Serialize(new { error = new { message = exception.Message } });
+            var result = JsonSerializer.Serialize(new {  message = exception.Message  });
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int)code;
             return context.Response.WriteAsync(result);

@@ -33,5 +33,13 @@ namespace shoppingify_backend.Controllers
             var result = await _billService.UploadShoppingList(uploadShoppingList);
             return Ok(result);
         }
+
+        [HttpPost("/merge-lists")]
+        [Authorize]
+        public async Task<IActionResult> MergeLists(MergeListsModel mergedList)
+        {
+            var result = await _billService.MergeLists(mergedList);
+            return Ok(result);
+        }
     }
 }
