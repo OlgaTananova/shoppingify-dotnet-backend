@@ -1,28 +1,15 @@
-﻿using iText.Kernel.Pdf.Canvas.Parser;
-using iText.Kernel.Pdf;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using System.Text;
+﻿using System.Text;
 using shoppingify_backend.Helpers.CustomExceptions;
 using shoppingify_backend.Models.ResponseModels;
 using System.Net.Http.Headers;
 using shoppingify_backend.Models.ValidationModels;
-using Microsoft.VisualBasic;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Text.Json;
 using Newtonsoft.Json;
-using System;
-using System.Drawing;
-using PdfiumViewer;
-using System.Drawing.Imaging;
 using shoppingify_backend.Helpers;
-using iText.Layout.Element;
-using Microsoft.AspNetCore.Components.Routing;
-using static iText.Svg.SvgConstants;
-using System.IO;
 using shoppingify_backend.Models;
 using Microsoft.EntityFrameworkCore;
 using shoppingify_backend.Models.Entities;
-using iText.Svg.Renderers.Impl;
+using Azure;
+using Azure.AI.FormRecognizer.DocumentAnalysis;
 
 
 namespace shoppingify_backend.Services
@@ -42,18 +29,22 @@ namespace shoppingify_backend.Services
         private readonly ApplicationContext _context;
         private readonly IUserResolverService _userResolverService;
         private readonly AuthContext _authContext;
+        private readonly string? _AzureAIKey;
+        private readonly string? _AzureAIRequestPath;
 
         public BillService(IHttpContextAccessor httpContextAccessor, IConfiguration configuration, ApplicationContext context, IUserResolverService userResolverService, AuthContext authContext)
         {
             _httpContextAccessor = httpContextAccessor;
             _OpenAIKey = configuration["OpenAI:Key"];
             _GPTRequestPath = configuration["OpenAI:RequestPath"];
+            _AzureAIKey = configuration["AzureAI:Key"];
+            _AzureAIRequestPath = configuration["AzureAI:RequestPath"];
             _context = context;
             _userResolverService = userResolverService;
             _authContext = authContext;
         }
 
-        private string UploadPdf()
+        private async Task<string> UploadPdf()
         {
             var httpContext = _httpContextAccessor.HttpContext;
             if (httpContext == null)
@@ -84,12 +75,19 @@ namespace shoppingify_backend.Services
                     // Fall back to OCR
                     memoryStream.Position = 0;
 
-                    var ocrText = ExtractTextFromPdfUsingOCR.ExtractTextFromPdfUsingOCRMethod(memoryStream);
-                    if (string.IsNullOrWhiteSpace(ocrText))
+                    if (_AzureAIKey is null || _AzureAIRequestPath is null)
                     {
-                        throw new BadRequestException("Failed to parse the pdf file.");
+                        throw new BadRequestException("Cannot connect to Azure Document Ingelligence Service.");
                     }
-                    return ocrText;
+                    var credential = new AzureKeyCredential(_AzureAIKey);
+                    var client = new DocumentAnalysisClient(new Uri(_AzureAIRequestPath), credential);
+                   
+                    AnalyzeDocumentOperation operation = await client.AnalyzeDocumentAsync(WaitUntil.Completed, "prebuilt-receipt", memoryStream);
+
+                    AnalyzeResult receipts = operation.Value;
+
+                    var result = JsonConvert.SerializeObject(receipts.Content);
+                    return result;
                 }
             }
         }
@@ -100,7 +98,7 @@ namespace shoppingify_backend.Services
                 throw new BadRequestException("Cannot connect to the GPT service.");
             }
             // convert a bill to a text 
-            string billText = UploadPdf();
+            string billText = await UploadPdf();
 
             // make a request object 
 

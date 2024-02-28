@@ -2,13 +2,13 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using shoppingify_backend.Helpers;
 using shoppingify_backend.Models;
 using shoppingify_backend.Models.Entities;
 using shoppingify_backend.Services;
 using System.Text;
+using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,11 +16,19 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add AuthContext to connect to identity database
 builder.Services.AddDbContext<AuthContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("Default"), sqlServerOptionsAction: sqlOptions => sqlOptions.EnableRetryOnFailure(
+        maxRetryCount: 5,
+        maxRetryDelay: TimeSpan.FromSeconds(30), 
+        errorNumbersToAdd: null
+        )));
 
 // Add ApplicationContext 
 builder.Services.AddDbContext<ApplicationContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("Default"), sqlServerOptionsAction: sqlOptions => sqlOptions.EnableRetryOnFailure(
+        maxRetryCount: 5,
+        maxRetryDelay: TimeSpan.FromSeconds(30), 
+        errorNumbersToAdd: null
+        )));
 
 // Add Identity Provider  + requirements for user's passwords
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
@@ -35,10 +43,11 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     .AddDefaultTokenProviders();
 
 // Add Cors
+string[] allowedOrigins = builder.Configuration["Cors"]?.Split(", ").ToArray()?? new string[1];
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowLocal", builder => {
-        builder.WithOrigins("http://localhost:3000")
+    options.AddPolicy("Allow", builder => {
+        builder.WithOrigins(allowedOrigins)
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials();
@@ -90,7 +99,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     //options.Cookie.SecurePolicy = CookieSecurePolicy.Always;  // Enforce HTTPS
     options.Cookie.SameSite = SameSiteMode.None;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.ExpireTimeSpan = TimeSpan.FromDays(30);
+    options.ExpireTimeSpan = TimeSpan.FromDays(7);
     options.LoginPath = "/Auth/login";
     options.LogoutPath = "/Auth/logout";
     options.Cookie.Name = "Token";
@@ -141,7 +150,7 @@ app.UseMiddleware<ErrorHandlingMiddleware>();
 app.UseMiddleware<ErrorLoggingMiddleware>();
 
 // Cors
-app.UseCors("AllowLocal");
+app.UseCors("Allow");
 
 app.UseAuthentication();
 

@@ -249,7 +249,7 @@ namespace shoppingify_backend.Services
             deletedItem.IsDeleted = true;
             foreach (var sli in deletedItem.ShoppingListItems)
             {
-                sli.IsDeleted = true;
+                //sli.IsDeleted = true;
                 _context.ShoppingListItems.Update(sli);
             }
 
